@@ -7,11 +7,34 @@ import { MessageCircle, Eye, Search, Filter, Plus, Edit, Trash } from "lucide-re
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useClients } from "@/hooks/useClients";
+import { useWhatsApp } from "@/utils/whatsapp";
+import { toast } from "sonner";
 
 export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const { clients, loading, deleteClient } = useClients();
+  const { sendWhatsAppMessage, isValidPhone } = useWhatsApp();
+
+  const handleWhatsAppClick = (client: any) => {
+    if (!client.phone) {
+      toast.error('Cliente não possui telefone cadastrado');
+      return;
+    }
+
+    if (!isValidPhone(client.phone)) {
+      toast.error('Número de telefone inválido');
+      return;
+    }
+
+    sendWhatsAppMessage({
+      phone: client.phone,
+      clientName: client.name,
+      message: `Olá ${client.name}, gostaria de falar sobre seus serviços de dedetização.`
+    });
+
+    toast.success('WhatsApp aberto com sucesso!');
+  };
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -139,7 +162,13 @@ export default function Clientes() {
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        onClick={() => handleWhatsAppClick(client)}
+                        title="Enviar mensagem WhatsApp"
+                      >
                         <MessageCircle className="w-4 h-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" asChild>

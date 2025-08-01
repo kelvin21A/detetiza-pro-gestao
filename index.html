@@ -1,24 +1,129 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>detetiza-pro-gestao</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
-
-    <meta property="og:title" content="detetiza-pro-gestao" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <title>DetetizaPro - Gestão de Dedetização</title>
+    <meta name="description" content="Sistema completo de gestão para empresas de dedetização e controle de pragas" />
+    <meta name="author" content="DetetizaPro" />
+    <meta name="keywords" content="dedetização, controle de pragas, gestão, SaaS, clientes, chamados, renovações" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#FF0000" />
+    <meta name="background-color" content="#FFFFFF" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="DetetizaPro" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#FF0000" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-72x72.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-128x128.png" />
+    <link rel="apple-touch-icon" sizes="114x114" href="/icons/icon-128x128.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/icons/icon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="60x60" href="/icons/icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="57x57" href="/icons/icon-72x72.png" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+    <meta name="msapplication-square70x70logo" content="/icons/icon-72x72.png" />
+    <meta name="msapplication-square150x150logo" content="/icons/icon-152x152.png" />
+    <meta name="msapplication-wide310x150logo" content="/icons/icon-384x384.png" />
+    <meta name="msapplication-square310x310logo" content="/icons/icon-384x384.png" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="DetetizaPro - Gestão de Dedetização" />
+    <meta property="og:description" content="Sistema completo de gestão para empresas de dedetização e controle de pragas" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+    <meta property="og:url" content="https://detetizapro.com" />
+    <meta property="og:site_name" content="DetetizaPro" />
+    
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:title" content="DetetizaPro - Gestão de Dedetização" />
+    <meta name="twitter:description" content="Sistema completo de gestão para empresas de dedetização e controle de pragas" />
+    <meta name="twitter:image" content="/icons/icon-512x512.png" />
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      // New content is available, notify user
+                      if (window.confirm('Nova versão disponível! Deseja atualizar?')) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        window.location.reload();
+                      }
+                    }
+                  });
+                }
+              });
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+      
+      // PWA Install Prompt
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('PWA install prompt triggered');
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Dispatch custom event to React app
+        window.dispatchEvent(new CustomEvent('pwa-install-available', { detail: e }));
+      });
+      
+      // Function to trigger PWA install (called from React)
+      window.installPWA = async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`PWA install outcome: ${outcome}`);
+          deferredPrompt = null;
+          
+          // Dispatch result to React app
+          window.dispatchEvent(new CustomEvent('pwa-install-result', { detail: outcome }));
+        }
+      };
+      
+      // Online/Offline detection
+      window.addEventListener('online', () => {
+        console.log('App is online');
+        window.dispatchEvent(new CustomEvent('app-online'));
+      });
+      
+      window.addEventListener('offline', () => {
+        console.log('App is offline');
+        window.dispatchEvent(new CustomEvent('app-offline'));
+      });
+    </script>
   </body>
 </html>

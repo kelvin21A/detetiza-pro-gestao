@@ -4,6 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Calendar } from "lucide-react";
 import { useState } from "react";
+import { useWhatsApp } from "@/utils/whatsapp";
+import { toast } from "sonner";
+import { MOCK_CLIENTS } from "@/data/mockData";
 
 interface Renovacao {
   id: number;
