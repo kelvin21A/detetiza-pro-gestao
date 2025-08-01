@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -189,23 +190,17 @@ export default function Equipes() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Equipes</h1>
-          <p className="text-gray-600 mt-1">
-            Gerencie sua equipe de técnicos
-          </p>
-        </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Membro
-            </Button>
-          </DialogTrigger>
+    <AppLayout title="Equipes">
+      <div className="space-y-6">
+        {/* Header Actions */}
+        <div className="flex justify-end">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm} className="bg-red-600 hover:bg-red-700 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Membro
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>
@@ -302,15 +297,16 @@ export default function Equipes() {
       </div>
 
       {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-        <Input
-          placeholder="Buscar por nome, cargo ou equipe..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            placeholder="Buscar por nome, cargo ou equipe..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
       {/* Team Members Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -319,12 +315,12 @@ export default function Equipes() {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Users2 className="w-5 h-5 text-blue-600" />
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <Users2 className="w-5 h-5 text-red-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">{member.name}</CardTitle>
-                    <p className="text-sm text-gray-600">{member.role}</p>
+                    <CardTitle className="text-lg text-foreground">{member.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{member.role}</p>
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -332,6 +328,7 @@ export default function Equipes() {
                     size="sm"
                     variant="ghost"
                     onClick={() => handleEdit(member)}
+                    className="text-muted-foreground hover:text-red-600"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -339,7 +336,7 @@ export default function Equipes() {
                     size="sm"
                     variant="ghost"
                     onClick={() => handleDelete(member.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-muted-foreground hover:text-red-600"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -347,20 +344,20 @@ export default function Equipes() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Users2 className="w-4 h-4" />
                 <span>{member.team}</span>
               </div>
               
               {member.phone && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Phone className="w-4 h-4" />
                   <span>{member.phone}</span>
                 </div>
               )}
               
               {member.email && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Mail className="w-4 h-4" />
                   <span className="truncate">{member.email}</span>
                 </div>
@@ -368,7 +365,7 @@ export default function Equipes() {
 
               {member.specialties.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Especialidades:</p>
+                  <p className="text-sm font-medium text-foreground mb-2">Especialidades:</p>
                   <div className="flex flex-wrap gap-1">
                     {member.specialties.map(specialty => (
                       <Badge key={specialty} variant="secondary" className="text-xs">
@@ -383,17 +380,18 @@ export default function Equipes() {
         ))}
       </div>
 
-      {filteredMembers.length === 0 && (
-        <div className="text-center py-12">
-          <Users2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Nenhum membro encontrado
-          </h3>
-          <p className="text-gray-600">
-            {searchTerm ? "Tente ajustar sua busca" : "Adicione o primeiro membro da equipe"}
-          </p>
-        </div>
-      )}
-    </div>
+        {filteredMembers.length === 0 && (
+          <div className="text-center py-12">
+            <Users2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
+              Nenhum membro encontrado
+            </h3>
+            <p className="text-muted-foreground">
+              {searchTerm ? "Tente ajustar sua busca" : "Adicione o primeiro membro da equipe"}
+            </p>
+          </div>
+        )}
+      </div>
+    </AppLayout>
   );
 }
