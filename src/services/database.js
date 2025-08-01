@@ -1,16 +1,56 @@
 import { supabase, TABLES } from '../lib/supabase'
 
+// Helper function to get current user's tenant_id
+const getCurrentTenantId = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  
+  const { data } = await supabase
+    .from('users')
+    .select('tenant_id')
+    .eq('id', user.id)
+    .single()
+  
+  return data?.tenant_id || null
+}
+
 // Auth Services
 export const authService = {
-  // Sign up new user
+  // Sign up new user with profile creation
   async signUp(email, password, userData) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: userData
+        data: {
+          full_name: userData.full_name || ''
+        }
       }
     })
+    
+    if (error) return { data, error }
+    
+    // Create user profile if auth user was created
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert([{
+          id: data.user.id,
+          email: data.user.email,
+          full_name: userData.full_name || '',
+          role: userData.role || 'technician',
+          tenant_id: userData.tenant_id,
+          is_active: true,
+          must_change_password: userData.must_change_password || false
+        }])
+      
+      if (profileError) {
+        // Clean up auth user if profile creation fails
+        await supabase.auth.admin.deleteUser(data.user.id)
+        return { data: null, error: profileError }
+      }
+    }
+    
     return { data, error }
   },
 
@@ -20,6 +60,23 @@ export const authService = {
       email,
       password
     })
+    
+    if (error) return { data, error }
+    
+    // Check if user is active
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('is_active, must_change_password')
+        .eq('id', data.user.id)
+        .single()
+      
+      if (!profile?.is_active) {
+        await supabase.auth.signOut()
+        return { data: null, error: { message: 'Usuário inativo' } }
+      }
+    }
+    
     return { data, error }
   },
 
@@ -39,26 +96,48 @@ export const authService = {
   async getCurrentSession() {
     const { data: { session } } = await supabase.auth.getSession()
     return session
+  },
+
+  // Get user profile
+  async getUserProfile(userId) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    
+    return { data, error }
   }
 }
 
 // Client Services
 export const clientService = {
-  // Get all clients
+  // Get all clients for current tenant
   async getAll() {
+    const tenantId = await getCurrentTenantId()
+    if (!tenantId) {
+      return { data: [], error: { message: 'Tenant não encontrado' } }
+    }
+
     const { data, error } = await supabase
       .from(TABLES.CLIENTS)
       .select(`
         *,
         contracts (
           id,
-          service_type,
+          contract_number,
           status,
           start_date,
           end_date,
-          value
+          value,
+          services (
+            name,
+            type
+          )
         )
       `)
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true)
       .order('created_at', { ascending: false })
     
     return { data, error }
@@ -90,9 +169,23 @@ export const clientService = {
 
   // Create new client
   async create(clientData) {
+    const tenantId = await getCurrentTenantId()
+    if (!tenantId) {
+      return { data: null, error: { message: 'Tenant não encontrado' } }
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    const clientWithTenant = {
+      ...clientData,
+      tenant_id: tenantId,
+      created_by: user?.id,
+      is_active: true
+    }
+
     const { data, error } = await supabase
       .from(TABLES.CLIENTS)
-      .insert([clientData])
+      .insert([clientWithTenant])
       .select()
       .single()
     
@@ -101,22 +194,44 @@ export const clientService = {
 
   // Update client
   async update(id, clientData) {
+    const tenantId = await getCurrentTenantId()
+    if (!tenantId) {
+      return { data: null, error: { message: 'Tenant não encontrado' } }
+    }
+
+    const updateData = {
+      ...clientData,
+      updated_at: new Date().toISOString()
+    }
+
     const { data, error } = await supabase
       .from(TABLES.CLIENTS)
-      .update(clientData)
+      .update(updateData)
       .eq('id', id)
+      .eq('tenant_id', tenantId)
       .select()
       .single()
     
     return { data, error }
   },
 
-  // Delete client
+  // Soft delete client (set is_active to false)
   async delete(id) {
+    const tenantId = await getCurrentTenantId()
+    if (!tenantId) {
+      return { data: null, error: { message: 'Tenant não encontrado' } }
+    }
+
     const { data, error } = await supabase
       .from(TABLES.CLIENTS)
-      .delete()
+      .update({ 
+        is_active: false,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .select()
+      .single()
     
     return { data, error }
   }

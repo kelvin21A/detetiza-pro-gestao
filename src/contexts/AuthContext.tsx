@@ -1,21 +1,41 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { User, Session, AuthError } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
+import { toast } from 'sonner';
+
+interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  role: 'super_admin' | 'admin' | 'manager' | 'technician';
+  tenant_id: string | null;
+  is_active: boolean;
+  must_change_password: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 interface AuthContextType {
   user: User | null;
+  userProfile: UserProfile | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
-  signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ user?: User; error?: AuthError | null }>;
+  signUp: (email: string, password: string, userData: Partial<UserProfile>) => Promise<{ user?: User; error?: AuthError | null }>;
+  signOut: () => Promise<{ error?: AuthError | null }>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error?: any }>;
+  changePassword: (newPassword: string) => Promise<{ error?: AuthError | null }>;
   testLogin: () => Promise<{ error: any }>;
+  isSuperAdmin: () => boolean;
+  isAdmin: () => boolean;
+  getTenantId: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
