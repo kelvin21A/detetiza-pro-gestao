@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="72" height="72" fill="#FFFFFF" rx="7.2"/>
+  <rect x="3.6" y="3.6" width="64.8" height="64.8" fill="none" stroke="#FF0000" stroke-width="1.44" rx="5.76"/>
+  <g transform="translate(18, 14.4)">
+    <rect x="0" y="10.8" width="10.8" height="28.8" fill="#FF0000" rx="1.44"/>
+    <rect x="10.8" y="12.96" width="5.76" height="4.32" fill="#FF0000"/>
+    <circle cx="20.16" cy="12.96" r="0.72" fill="#FF0000"/>
+    <circle cx="23.04" cy="10.8" r="0.576" fill="#FF0000"/>
+    <circle cx="25.2" cy="15.84" r="0.432" fill="#FF0000"/>
+    <path d="M 3.6 18 Q 1.44 20.16 3.6 23.04 L 8.64 23.04 Q 10.8 20.16 8.64 18 Z" fill="#FF0000"/>
+  </g>
+  <text x="36" y="57.6" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="8.64" fill="#FF0000">DP</text>
+</svg>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="96" height="96" fill="#FFFFFF" rx="9.6"/>
+  <rect x="4.8" y="4.8" width="86.4" height="86.4" fill="none" stroke="#FF0000" stroke-width="1.92" rx="7.68"/>
+  <!-- Ícone de pessoa/cliente -->
+  <g transform="translate(24, 20)">
+    <circle cx="24" cy="16" r="12" fill="#FF0000"/>
+    <path d="M 8 56 Q 8 40 24 40 Q 40 40 40 56 L 8 56 Z" fill="#FF0000"/>
+  </g>
+  <text x="48" y="85" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="8" fill="#FF0000">Clientes</text>
+</svg>
