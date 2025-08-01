@@ -2,67 +2,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { MOCK_CLIENTS, Client } from '@/data/mockData';
 
-export interface Client {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  cnpj_cpf?: string;
-  address?: string;
-  status: string;
-  last_service_date?: string;
-  next_renewal_date?: string;
-  organization_id: string;
-  created_at: string;
-  updated_at: string;
-}
+// Client interface is now imported from mockData.ts
 
-// Mock data for testing
-const MOCK_CLIENTS: Client[] = [
-  {
-    id: '1',
-    name: 'Restaurante Bom Sabor',
-    email: 'contato@bomsabor.com',
-    phone: '(11) 3456-7890',
-    cnpj_cpf: '12.345.678/0001-90',
-    address: 'Rua das Flores, 123 - São Paulo, SP',
-    status: 'em-dia',
-    last_service_date: '2024-01-15',
-    next_renewal_date: '2024-07-15',
-    organization_id: 'test-org-id',
-    created_at: '2024-01-01T10:00:00Z',
-    updated_at: '2024-01-15T14:30:00Z'
-  },
-  {
-    id: '2',
-    name: 'Padaria Central',
-    email: 'admin@padariacentral.com.br',
-    phone: '(11) 2345-6789',
-    cnpj_cpf: '98.765.432/0001-10',
-    address: 'Av. Principal, 456 - São Paulo, SP',
-    status: 'proximo-vencimento',
-    last_service_date: '2024-01-10',
-    next_renewal_date: '2024-02-10',
-    organization_id: 'test-org-id',
-    created_at: '2023-12-15T09:00:00Z',
-    updated_at: '2024-01-10T16:45:00Z'
-  },
-  {
-    id: '3',
-    name: 'Supermercado Família',
-    email: 'gerencia@superfamilia.com',
-    phone: '(11) 4567-8901',
-    cnpj_cpf: '11.222.333/0001-44',
-    address: 'Rua do Comércio, 789 - São Paulo, SP',
-    status: 'vencido',
-    last_service_date: '2023-11-20',
-    next_renewal_date: '2023-12-20',
-    organization_id: 'test-org-id',
-    created_at: '2023-11-01T08:00:00Z',
-    updated_at: '2023-11-20T11:20:00Z'
-  }
-];
+// Mock data is now centralized in mockData.ts
 
 export function useClients() {
   const [clients, setClients] = useState<Client[]>([]);
