@@ -1,15 +1,20 @@
-const CACHE_NAME = 'detetizapro-v1.0.0';
-const STATIC_CACHE_NAME = 'detetizapro-static-v1.0.0';
-const DYNAMIC_CACHE_NAME = 'detetizapro-dynamic-v1.0.0';
+const CACHE_NAME = 'detetizapro-v1.0.1';
+const STATIC_CACHE_NAME = 'detetizapro-static-v1.0.1';
+const DYNAMIC_CACHE_NAME = 'detetizapro-dynamic-v1.0.1';
 
 // Arquivos essenciais para funcionamento offline
 const STATIC_ASSETS = [
   '/',
-  '/index.html',
   '/manifest.json',
   '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  // Adicionar outros assets críticos conforme necessário
+  '/icons/icon-512x512.png'
+];
+
+// Assets que NÃO devem ser cacheados (para evitar problemas de carregamento)
+const EXCLUDE_FROM_CACHE = [
+  '/index.html', // Sempre buscar a versão mais recente
+  /\/assets\/.*\.js$/, // JavaScript bundles
+  /\/assets\/.*\.css$/ // CSS bundles
 ];
 
 // URLs da API Supabase que devem ser cacheadas
@@ -67,6 +72,37 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Skip cross-origin requests
+  if (!url.origin.includes(self.location.origin)) {
+    return;
+  }
+
+  // NEVER cache critical assets that could cause white screen
+  const shouldExcludeFromCache = EXCLUDE_FROM_CACHE.some(pattern => {
+    if (typeof pattern === 'string') {
+      return url.pathname === pattern;
+    }
+    return pattern.test(url.pathname);
+  });
+
+  if (shouldExcludeFromCache) {
+    // Always fetch from network for critical assets
+    event.respondWith(
+      fetch(request).catch(() => {
+        // Only fallback to cache for non-critical assets
+        if (url.pathname !== '/index.html') {
+          return caches.match(request);
+        }
+        // For index.html, return a basic fallback
+        return new Response(
+          '<!DOCTYPE html><html><head><title>DetetizaPro</title></head><body><div id="root">Carregando...</div></body></html>',
+          { headers: { 'Content-Type': 'text/html' } }
+        );
+      })
+    );
+    return;
+  }
 
   // Estratégia para arquivos estáticos (Cache First)
   if (STATIC_ASSETS.some(asset => request.url.includes(asset))) {
