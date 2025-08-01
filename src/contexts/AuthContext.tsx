@@ -9,6 +9,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  testLogin: () => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,13 +67,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  // Test login function for development
+  const testLogin = async () => {
+    try {
+      // Create a mock user for testing
+      const mockUser = {
+        id: 'test-user-id',
+        email: 'teste@detetizapro.com',
+        user_metadata: {
+          full_name: 'Administrador Teste'
+        },
+        app_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as User;
+
+      const mockSession = {
+        access_token: 'mock-access-token',
+        refresh_token: 'mock-refresh-token',
+        expires_in: 3600,
+        token_type: 'bearer',
+        user: mockUser
+      } as Session;
+
+      // Set the mock user and session
+      setUser(mockUser);
+      setSession(mockSession);
+      
+      // Store in localStorage for persistence
+      localStorage.setItem('detetizapro_test_user', JSON.stringify(mockUser));
+      localStorage.setItem('detetizapro_test_session', JSON.stringify(mockSession));
+      
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
   const value = {
     user,
     session,
     loading,
     signIn,
     signUp,
-    signOut
+    signOut,
+    testLogin
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

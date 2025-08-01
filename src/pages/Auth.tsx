@@ -18,7 +18,7 @@ export default function Auth() {
   const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, testLogin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -66,6 +66,28 @@ export default function Auth() {
         title: 'Cadastro realizado!',
         description: 'Verifique seu email para confirmar a conta'
       });
+    }
+    
+    setLoading(false);
+  };
+
+  const handleTestLogin = async () => {
+    setLoading(true);
+    
+    const { error } = await testLogin();
+    
+    if (error) {
+      toast({
+        title: 'Erro no login de teste',
+        description: 'Não foi possível fazer login de teste',
+        variant: 'destructive'
+      });
+    } else {
+      toast({
+        title: 'Login de teste realizado!',
+        description: 'Bem-vindo ao DetetizaPro (modo teste)'
+      });
+      navigate('/');
     }
     
     setLoading(false);
@@ -202,6 +224,33 @@ export default function Auth() {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* Test Login Section for Development */}
+        <div className="mt-6">
+          <Card className="border-dashed border-2 border-muted-foreground/25">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-muted-foreground">Desenvolvimento</CardTitle>
+              <CardDescription className="text-xs">
+                Login de teste para acessar o sistema sem configurar Supabase
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={handleTestLogin}
+                variant="outline" 
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                🧪 Login de Teste
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Usuário: Administrador Teste<br />
+                Email: teste@detetizapro.com
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
