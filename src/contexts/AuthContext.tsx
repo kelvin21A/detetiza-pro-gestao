@@ -40,19 +40,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Check for existing test session first
+    const testUser = localStorage.getItem('testUser');
+    if (testUser) {
+      try {
+        const userData = JSON.parse(testUser);
+        setUser(userData);
+        setUserProfile({
+          id: userData.id,
+          email: userData.email,
+          full_name: userData.name || 'Administrador',
+          role: userData.role || 'admin',
+          tenant_id: '00000000-0000-0000-0000-000000000001',
+          is_active: true,
+          must_change_password: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        setLoading(false);
+        return;
+      } catch (error) {
+        localStorage.removeItem('testUser');
+      }
+    }
+
+    // Set up Supabase auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Fetch user profile from database
+          try {
+            const { data: profile } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            setUserProfile(profile);
+          } catch (error) {
+            console.error('Error fetching user profile:', error);
+          }
+        } else {
+          setUserProfile(null);
+        }
+        
         setLoading(false);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check for existing Supabase session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          setUserProfile(profile);
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      }
+      
       setLoading(false);
     });
 
@@ -60,11 +117,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        return { error };
+      }
+      
+      if (data.user) {
+        // Check if user is active
+        const { data: profile } = await supabase
+          .from('users')
+          .select('is_active, must_change_password')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profile && !profile.is_active) {
+          await supabase.auth.signOut();
+          return { error: { message: 'Usuário inativo. Entre em contato com o administrador.' } };
+        }
+      }
+      
+      return { error: null };
+    } catch (err) {
+      return { error: { message: 'Erro inesperado ao fazer login' } };
+    }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
@@ -93,31 +173,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Create a mock user for testing
       const mockUser = {
         id: 'test-user-id',
-        email: 'teste@detetizapro.com',
-        user_metadata: {
-          full_name: 'Administrador Teste'
-        },
-        app_metadata: {},
-        aud: 'authenticated',
+        email: 'teste@teste',
+        name: 'Administrador',
+        role: 'admin'
+      };
+
+      const mockUserProfile = {
+        id: 'test-user-id',
+        email: 'teste@teste',
+        full_name: 'Administrador',
+        role: 'admin' as const,
+        tenant_id: '00000000-0000-0000-0000-000000000001',
+        is_active: true,
+        must_change_password: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      } as User;
+      };
 
-      const mockSession = {
-        access_token: 'mock-access-token',
-        refresh_token: 'mock-refresh-token',
-        expires_in: 3600,
-        token_type: 'bearer',
-        user: mockUser
-      } as Session;
-
-      // Set the mock user and session
-      setUser(mockUser);
-      setSession(mockSession);
+      // Set the mock user and profile
+      setUser(mockUser as any);
+      setUserProfile(mockUserProfile);
       
       // Store in localStorage for persistence
-      localStorage.setItem('detetizapro_test_user', JSON.stringify(mockUser));
-      localStorage.setItem('detetizapro_test_session', JSON.stringify(mockSession));
+      localStorage.setItem('testUser', JSON.stringify(mockUser));
       
       return { error: null };
     } catch (error) {
@@ -125,14 +203,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    try {
+      if (!user) {
+        return { error: 'Usuário não autenticado' };
+      }
+
+      const { error } = await supabase
+        .from('users')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        return { error };
+      }
+
+      // Update local state
+      if (userProfile) {
+        setUserProfile({ ...userProfile, ...updates });
+      }
+      
+      return {};
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  const changePassword = async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      // Update must_change_password flag if needed
+      if (userProfile?.must_change_password) {
+        await updateProfile({ must_change_password: false });
+      }
+
+      return {};
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  const isSuperAdmin = () => {
+    return userProfile?.role === 'super_admin';
+  };
+
+  const isAdmin = () => {
+    return userProfile?.role === 'admin' || userProfile?.role === 'super_admin';
+  };
+
+  const getTenantId = () => {
+    return userProfile?.tenant_id || null;
+  };
+
   const value = {
     user,
+    userProfile,
     session,
     loading,
     signIn,
     signUp,
     signOut,
-    testLogin
+    updateProfile,
+    changePassword,
+    testLogin,
+    isSuperAdmin,
+    isAdmin,
+    getTenantId
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
