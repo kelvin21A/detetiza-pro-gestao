@@ -83,7 +83,13 @@ export function AppSidebar() {
 
         {/* Logout Button */}
         <div className="mt-auto p-4 border-t border-border">
-          <SidebarMenuButton className="w-full text-foreground hover:text-primary">
+          <SidebarMenuButton 
+            className="w-full text-foreground hover:text-primary"
+            onClick={async () => {
+              const { supabase } = await import('@/integrations/supabase/client');
+              await supabase.auth.signOut();
+            }}
+          >
             <LogOut className="w-4 h-4" />
             {!collapsed && <span>Sair</span>}
           </SidebarMenuButton>
