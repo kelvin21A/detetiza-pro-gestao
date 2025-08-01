@@ -12,6 +12,7 @@ import ClientCreate from "./pages/ClientCreate";
 import ClientEdit from "./pages/ClientEdit";
 import Renovacoes from "./pages/Renovacoes";
 import Chamados from "./pages/Chamados";
+import Equipes from "./pages/Equipes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/clientes/:id/editar" element={<ProtectedRoute><ClientEdit /></ProtectedRoute>} />
             <Route path="/renovacoes" element={<ProtectedRoute><Renovacoes /></ProtectedRoute>} />
             <Route path="/chamados" element={<ProtectedRoute><Chamados /></ProtectedRoute>} />
+            <Route path="/equipes" element={<ProtectedRoute><Equipes /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

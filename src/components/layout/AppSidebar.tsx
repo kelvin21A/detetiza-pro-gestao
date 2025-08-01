@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -33,6 +34,7 @@ export function AppSidebar() {
   const { open } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+  const { signOut } = useAuth();
 
   const isActive = (path: string) => currentPath === path;
   const getNavClasses = ({ isActive }: { isActive: boolean }) =>
@@ -84,11 +86,8 @@ export function AppSidebar() {
         {/* Logout Button */}
         <div className="mt-auto p-4 border-t border-border">
           <SidebarMenuButton 
-            className="w-full text-foreground hover:text-primary"
-            onClick={async () => {
-              const { supabase } = await import('@/integrations/supabase/client');
-              await supabase.auth.signOut();
-            }}
+            className="w-full text-foreground hover:text-primary hover:bg-muted/50 transition-colors"
+            onClick={signOut}
           >
             <LogOut className="w-4 h-4" />
             {!collapsed && <span>Sair</span>}
