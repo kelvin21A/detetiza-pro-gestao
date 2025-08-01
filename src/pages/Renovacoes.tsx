@@ -54,6 +54,40 @@ const renovacoesData: Renovacao[] = [
 
 export default function Renovacoes() {
   const [statusFilter, setStatusFilter] = useState("todos");
+  const { sendWhatsAppMessage, isValidPhone } = useWhatsApp();
+
+  const handleWhatsAppClick = (renovacao: Renovacao) => {
+    // Find client phone from mock data
+    const client = MOCK_CLIENTS.find(c => c.name === renovacao.cliente);
+    
+    if (!client || !client.phone) {
+      toast.error('Cliente não possui telefone cadastrado');
+      return;
+    }
+
+    if (!isValidPhone(client.phone)) {
+      toast.error('Número de telefone inválido');
+      return;
+    }
+
+    // Generate renewal message based on status
+    let message = '';
+    if (renovacao.status === 'vencido') {
+      message = `Olá ${renovacao.cliente}, seu contrato de dedetização venceu há ${Math.abs(renovacao.diasRestantes)} dias. Entre em contato conosco para renovar!`;
+    } else if (renovacao.status === 'proximo') {
+      message = `Olá ${renovacao.cliente}, seu contrato de dedetização vence em ${renovacao.diasRestantes} dias. Entre em contato conosco para renovar!`;
+    } else {
+      message = `Olá ${renovacao.cliente}, gostaria de falar sobre a renovação do seu contrato de dedetização.`;
+    }
+
+    sendWhatsAppMessage({
+      phone: client.phone,
+      clientName: renovacao.cliente,
+      message: message
+    });
+
+    toast.success('WhatsApp aberto com sucesso!');
+  };
 
   const filteredRenovacoes = renovacoesData.filter(renovacao => {
     if (statusFilter === "todos") return true;
@@ -163,11 +197,13 @@ export default function Renovacoes() {
                   
                   <div className="flex gap-2">
                     <Button 
-                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      className="bg-green-600 text-white hover:bg-green-700"
                       size="sm"
+                      onClick={() => handleWhatsAppClick(renovacao)}
+                      title="Enviar mensagem WhatsApp"
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
-                      Enviar Mensagem
+                      WhatsApp
                     </Button>
                   </div>
                 </div>
