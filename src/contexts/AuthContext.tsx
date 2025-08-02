@@ -129,6 +129,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return await testLogin();
       }
       
+      // Check for super admin login
+      if (email === 'admin@detetizapro.com' && password === 'senhaadmin123') {
+        return await superAdminLogin();
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -181,21 +186,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Test login function for development
   const testLogin = async () => {
     try {
-      // Create a mock user for testing
+      // Mock user for test login
       const mockUser = {
         id: 'test-user-id',
         email: 'teste@teste',
-        name: 'Administrador',
         role: 'admin'
       };
 
-      const mockUserProfile = {
-        id: 'test-user-id',
+      const mockUserProfile: UserProfile = {
+        id: 'test-profile-id',
         user_id: 'test-user-id',
-        email: 'teste@teste',
         full_name: 'Administrador',
-        role: 'admin' as const,
-        organization_id: '00000000-0000-0000-0000-000000000001',
+        email: 'teste@teste',
+        role: 'admin',
+        organization_id: 'test-org-id',
         is_super_admin: false,
         active: true,
         must_change_password: false,
@@ -209,6 +213,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Store in localStorage for persistence
       localStorage.setItem('testUser', JSON.stringify(mockUser));
+      
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  const superAdminLogin = async () => {
+    try {
+      // Mock super admin user
+      const mockSuperAdmin = {
+        id: 'super-admin-id',
+        email: 'admin@detetizapro.com',
+        role: 'super_admin'
+      };
+
+      const mockSuperAdminProfile: UserProfile = {
+        id: 'super-admin-profile-id',
+        user_id: 'super-admin-id',
+        full_name: 'Super Administrador',
+        email: 'admin@detetizapro.com',
+        role: 'super_admin',
+        organization_id: null, // Super admin não tem organização específica
+        is_super_admin: true,
+        active: true,
+        must_change_password: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Set the mock super admin user and profile
+      setUser(mockSuperAdmin as any);
+      setUserProfile(mockSuperAdminProfile);
+      
+      // Store in localStorage for persistence
+      localStorage.setItem('superAdminUser', JSON.stringify(mockSuperAdmin));
       
       return { error: null };
     } catch (error) {
