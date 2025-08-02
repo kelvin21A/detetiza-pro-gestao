@@ -5,11 +5,13 @@ import { toast } from 'sonner';
 
 interface UserProfile {
   id: string;
+  user_id: string;
   email: string;
   full_name: string;
   role: 'super_admin' | 'admin' | 'manager' | 'technician';
-  tenant_id: string | null;
-  is_active: boolean;
+  organization_id: string | null;
+  is_super_admin?: boolean;
+  active: boolean;
   must_change_password: boolean;
   created_at: string;
   updated_at: string;
@@ -51,7 +53,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: userData.email,
           full_name: userData.name || 'Administrador',
           role: userData.role || 'admin',
-          tenant_id: '00000000-0000-0000-0000-000000000001',
+          organization_id: '00000000-0000-0000-0000-000000000001',
+          is_super_admin: false,
+          active: true,
           is_active: true,
           must_change_password: false,
           created_at: new Date().toISOString(),
@@ -74,14 +78,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Fetch user profile from database
           try {
             const { data: profile } = await supabase
-              .from('users')
+              .from('profiles')
               .select('*')
-              .eq('id', session.user.id)
+              .eq('user_id', session.user.id)
               .single();
             
             setUserProfile(profile);
           } catch (error) {
             console.error('Error fetching user profile:', error);
+            setUserProfile(null);
           }
         } else {
           setUserProfile(null);
@@ -99,14 +104,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         try {
           const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('*')
-            .eq('id', session.user.id)
+            .eq('user_id', session.user.id)
             .single();
           
           setUserProfile(profile);
         } catch (error) {
           console.error('Error fetching user profile:', error);
+          setUserProfile(null);
         }
       }
       
@@ -118,6 +124,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Check for test login first
+      if (email === 'teste@teste' && password === '123456') {
+        return await testLogin();
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -130,12 +141,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.user) {
         // Check if user is active
         const { data: profile } = await supabase
-          .from('users')
-          .select('is_active, must_change_password')
-          .eq('id', data.user.id)
+          .from('profiles')
+          .select('active, must_change_password')
+          .eq('user_id', data.user.id)
           .single();
         
-        if (profile && !profile.is_active) {
+        if (profile && !profile.active) {
           await supabase.auth.signOut();
           return { error: { message: 'Usuário inativo. Entre em contato com o administrador.' } };
         }
@@ -180,11 +191,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const mockUserProfile = {
         id: 'test-user-id',
+        user_id: 'test-user-id',
         email: 'teste@teste',
         full_name: 'Administrador',
         role: 'admin' as const,
-        tenant_id: '00000000-0000-0000-0000-000000000001',
-        is_active: true,
+        organization_id: '00000000-0000-0000-0000-000000000001',
+        is_super_admin: false,
+        active: true,
         must_change_password: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -210,12 +223,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const { error } = await supabase
-        .from('users')
+        .from('profiles')
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', user.id);
+        .eq('user_id', user.id);
 
       if (error) {
         return { error };
@@ -262,7 +275,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getTenantId = () => {
-    return userProfile?.tenant_id || null;
+    return userProfile?.organization_id || null;
   };
 
   const value = {
