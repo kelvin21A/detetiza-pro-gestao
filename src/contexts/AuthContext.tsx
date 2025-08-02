@@ -50,13 +50,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         setUserProfile({
           id: userData.id,
+          user_id: userData.id,
           email: userData.email,
           full_name: userData.name || 'Administrador',
           role: userData.role || 'admin',
           organization_id: '00000000-0000-0000-0000-000000000001',
           is_super_admin: false,
           active: true,
-          is_active: true,
           must_change_password: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
