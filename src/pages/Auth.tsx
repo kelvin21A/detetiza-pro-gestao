@@ -1,50 +1,66 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ClipboardList, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ClipboardList, Loader2, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Auth() {
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupName, setSignupName] = useState('');
-  const [organizationName, setOrganizationName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
   
-  const { signIn, signUp, testLogin } = useAuth();
-  const { toast } = useToast();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
+
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (user) {
+      // Se for super admin, redirecionar para painel super admin
+      if (user.is_super_admin || user.role === 'super_admin') {
+        navigate('/super-admin');
+      } else {
+        navigate('/');
+      }
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setLoginError('');
     
-    const { error } = await signIn(loginEmail, loginPassword);
+    if (!email || !password) {
+      setLoginError('Por favor, preencha todos os campos');
+      setLoading(false);
+      return;
+    }
+    
+    const { error } = await signIn(email, password);
     
     if (error) {
-      toast({
-        title: 'Erro no login',
-        description: error.message === 'Invalid login credentials' 
-          ? 'Email ou senha incorretos' 
-          : error.message,
-        variant: 'destructive'
-      });
+      const errorMessage = error.message === 'Invalid login credentials' 
+        ? 'Credenciais inválidas. Verifique seu email e senha.' 
+        : error.message;
+      setLoginError(errorMessage);
+      toast.error(errorMessage);
     } else {
-      toast({
-        title: 'Login realizado com sucesso!',
-        description: 'Bem-vindo ao DetetizaPro'
-      });
-      navigate('/');
+      toast.success('Login realizado com sucesso!');
+      // Navegação será feita pelo useEffect acima
     }
     
     setLoading(false);
+  };
+
+  // Função para usar credenciais de teste (apenas desenvolvimento)
+  const useTestCredentials = () => {
+    setEmail('teste@teste');
+    setPassword('123456');
   };
 
   const handleSignup = async (e: React.FormEvent) => {
