@@ -1,20 +1,39 @@
-const CACHE_NAME = 'detetizapro-v1.0.1';
-const STATIC_CACHE_NAME = 'detetizapro-static-v1.0.1';
-const DYNAMIC_CACHE_NAME = 'detetizapro-dynamic-v1.0.1';
+// Nomes de cache com timestamp para forçar atualizações
+const CACHE_VERSION = 'v1.0.2';
+const CACHE_NAME = `detetizapro-${CACHE_VERSION}`;
+const STATIC_CACHE_NAME = `detetizapro-static-${CACHE_VERSION}`;
+const DYNAMIC_CACHE_NAME = `detetizapro-dynamic-${CACHE_VERSION}`;
 
-// Arquivos essenciais para funcionamento offline
+// Apenas arquivos estáticos essenciais para o funcionamento offline
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
   '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/icons/icon-512x512.png',
+  '/favicon.ico'
 ];
 
-// Assets que NÃO devem ser cacheados (para evitar problemas de carregamento)
+// Assets que NUNCA devem ser cacheados
 const EXCLUDE_FROM_CACHE = [
-  '/index.html', // Sempre buscar a versão mais recente
-  /\/assets\/.*\.js$/, // JavaScript bundles
-  /\/assets\/.*\.css$/ // CSS bundles
+  '/index.html',
+  '/src/',
+  '/node_modules/',
+  '/api/'
+];
+
+// Tipos de requisição que devem usar a estratégia 'Network First'
+const NETWORK_FIRST_FOR = [
+  'document',
+  'script', 
+  'style',
+  'manifest'
+];
+
+// Tipos de requisição que devem usar a estratégia 'Cache First'
+const CACHE_FIRST_FOR = [
+  'font',
+  'image',
+  'media'
 ];
 
 // URLs da API Supabase que devem ser cacheadas
@@ -77,32 +96,101 @@ self.addEventListener('fetch', (event) => {
   if (!url.origin.includes(self.location.origin)) {
     return;
   }
+  
+  // Ignora requisições POST, PUT, DELETE, etc.
+  if (request.method !== 'GET') {
+    return;
+  }
 
-  // NEVER cache critical assets that could cause white screen
+  // Verifica se a URL deve ser excluída do cache
   const shouldExcludeFromCache = EXCLUDE_FROM_CACHE.some(pattern => {
     if (typeof pattern === 'string') {
-      return url.pathname === pattern;
+      return url.pathname.startsWith(pattern);
     }
     return pattern.test(url.pathname);
   });
 
+  // Se for um arquivo que não deve ser cacheados, busca apenas da rede
   if (shouldExcludeFromCache) {
-    // Always fetch from network for critical assets
+    event.respondWith(fetch(request));
+    return;
+  }
+  
+  // Estratégia Network First para HTML, CSS, JS e manifest
+  if (NETWORK_FIRST_FOR.includes(request.destination)) {
     event.respondWith(
-      fetch(request).catch(() => {
-        // Only fallback to cache for non-critical assets
-        if (url.pathname !== '/index.html') {
-          return caches.match(request);
+      fetch(request)
+        .then(networkResponse => {
+          // Atualiza o cache com a nova resposta
+          const responseClone = networkResponse.clone();
+          caches.open(DYNAMIC_CACHE_NAME)
+            .then(cache => cache.put(request, responseClone));
+          return networkResponse;
+        })
+        .catch(() => {
+          // Se a rede falhar, tenta buscar do cache
+          return caches.match(request).then(cachedResponse => {
+            return cachedResponse || new Response('Sem conexão e sem cache disponível', {
+              status: 408,
+              headers: { 'Content-Type': 'text/plain' }
+            });
+          });
+        })
+    );
+    return;
+  }
+  
+  // Estratégia Cache First para fontes, imagens e mídia
+  if (CACHE_FIRST_FOR.includes(request.destination)) {
+    event.respondWith(
+      caches.match(request).then(cachedResponse => {
+        // Retorna do cache se disponível
+        if (cachedResponse) {
+          // Atualiza o cache em segundo plano
+          fetch(request).then(response => {
+            const responseClone = response.clone();
+            caches.open(DYNAMIC_CACHE_NAME)
+              .then(cache => cache.put(request, responseClone));
+          });
+          return cachedResponse;
         }
-        // For index.html, return a basic fallback
-        return new Response(
-          '<!DOCTYPE html><html><head><title>DetetizaPro</title></head><body><div id="root">Carregando...</div></body></html>',
-          { headers: { 'Content-Type': 'text/html' } }
-        );
+        
+        // Se não estiver no cache, busca da rede
+        return fetch(request).then(response => {
+          // Não armazena respostas de erro no cache
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+          
+          // Armazena a resposta no cache
+          const responseToCache = response.clone();
+          caches.open(DYNAMIC_CACHE_NAME)
+            .then(cache => cache.put(request, responseToCache));
+            
+          return response;
+        });
       })
     );
     return;
   }
+  
+  // Para qualquer outro tipo de requisição, tenta buscar da rede primeiro
+  event.respondWith(
+    fetch(request)
+      .then(response => {
+        // Se for uma resposta válida, armazena no cache
+        if (response && response.status === 200) {
+          const responseClone = response.clone();
+          caches.open(DYNAMIC_CACHE_NAME)
+            .then(cache => cache.put(request, responseClone));
+        }
+        return response;
+      })
+      .catch(() => {
+        // Se a rede falhar, tenta buscar do cache
+        return caches.match(request);
+      })
+  );
 
   // Estratégia para arquivos estáticos (Cache First)
   if (STATIC_ASSETS.some(asset => request.url.includes(asset))) {

@@ -9,6 +9,7 @@ import SuperAdminRoute from "./components/SuperAdminRoute";
 import SafariMobileFix from "./components/SafariMobileFix";
 import { PWAInstallBanner, PWAUpdateBanner } from "./components/PWAInstallBanner";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { UpdateNotification } from "./components/UpdateNotification";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -50,6 +51,7 @@ const App = () => (
             {/* PWA Components */}
             <PWAInstallBanner />
             <PWAUpdateBanner />
+            <UpdateNotification />
           </BrowserRouter>
         </TooltipProvider>
       </SafariMobileFix>
