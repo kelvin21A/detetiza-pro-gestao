@@ -4,16 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { useServiceCalls, ServiceCallStatus, ServiceType } from "@/hooks/useServiceCalls";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { useServiceCalls, ServiceCallStatus, ServiceType } from "@/hooks/useServiceCalls";
+import { useToast } from "@/hooks/use-toast";
 
 interface ServiceCall {
   id: string;
@@ -288,61 +288,118 @@ export default function Chamados() {
   return (
     <AppLayout title="Chamados de Serviço">
       <div className="space-y-6">
-        {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Chamados de Serviço</h1>
-            <p className="text-sm text-gray-500 mt-1">Gerencie todos os chamados de serviço</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        {/* Header */}
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold tracking-tight">Chamados</h1>
             <Button 
-              variant="outline" 
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center justify-center gap-2"
+              onClick={() => navigate('/chamados/novo')} 
+              className="bg-red-600 hover:bg-red-700"
             >
-              {isRefreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              )}
-              <span>Atualizar</span>
-            </Button>
-            <Button 
-              className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
-              onClick={() => navigate('/chamados/novo')}
-            >
-              <Plus className="w-4 h-4" />
-              <span>Novo Chamado</span>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Chamado
             </Button>
           </div>
+          <p className="text-muted-foreground">Gerencie os chamados de serviço da sua equipe.</p>
         </div>
 
-        {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar por cliente, título ou descrição..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-              disabled={isLoading}
-            />
+        {/* Filters */}
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por cliente, endereço ou descrição..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Select 
+              value={statusFilter} 
+              onValueChange={(value) => setStatusFilter(value as ServiceCallStatus)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filtrar por status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pending">Pendentes</SelectItem>
+                <SelectItem value="in_progress">Em Andamento</SelectItem>
+                <SelectItem value="completed">Concluídos</SelectItem>
+                <SelectItem value="cancelled">Cancelados</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
             <Button
-              variant={statusFilter === "todos" ? "default" : "outline"}
-              onClick={() => setStatusFilter("todos")}
-              className={statusFilter === "todos" ? "bg-red-600 hover:bg-red-700 text-white" : ""}
+              variant={statusFilter === "all" ? "default" : "outline"}
+              onClick={() => setStatusFilter("all")}
+              className={statusFilter === "all" ? "bg-primary text-primary-foreground" : ""}
               disabled={isLoading}
             >
               Todos
             </Button>
             <Button
+              variant={statusFilter === "pending" ? "default" : "outline"}
+              onClick={() => setStatusFilter("pending")}
+              className={statusFilter === "pending" ? "bg-yellow-500 hover:bg-yellow-600 text-white" : ""}
+              disabled={isLoading}
+            >
+              Pendentes
+            </Button>
+            <Button
+              variant={statusFilter === "in_progress" ? "default" : "outline"}
+              onClick={() => setStatusFilter("in_progress")}
+              className={statusFilter === "in_progress" ? "bg-blue-500 hover:bg-blue-600 text-white" : ""}
+              disabled={isLoading}
+            >
+              Em Andamento
+            </Button>
+            <Button
+              variant={statusFilter === "completed" ? "default" : "outline"}
+              onClick={() => setStatusFilter("completed")}
+              className={statusFilter === "completed" ? "bg-green-500 hover:bg-green-600 text-white" : ""}
+              disabled={isLoading}
+            >
+              Concluídos
+            </Button>
+            <Button
+              variant={statusFilter === "cancelled" ? "default" : "outline"}
+              onClick={() => setStatusFilter("cancelled")}
+              className={statusFilter === "cancelled" ? "bg-gray-500 hover:bg-gray-600 text-white" : ""}
+              disabled={isLoading}
+            >
+              Cancelados
+            </Button>
+          </div>
+        </div>
+
+      {/* Refresh Button */}
+      <div className="flex justify-end">
+        <Button 
+          variant="outline" 
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="flex items-center gap-2"
+        >
+          {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
+            <span>Atualizar</span>
+          </Button>
+          <Button 
+            className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
+            onClick={() => navigate('/chamados/novo')}
+          >
+            <Plus className="w-4 h-4" />
+            <span>Novo Chamado</span>
+          </Button>
               variant={statusFilter === "pending" ? "default" : "outline"}
               onClick={() => setStatusFilter("pending")}
               className={statusFilter === "pending" ? "bg-yellow-500 hover:bg-yellow-600 text-white" : ""}
@@ -522,11 +579,11 @@ export default function Chamados() {
               : 'Comece criando um novo chamado de serviço.'}
           </p>
           <Button 
-            onClick={() => navigate('/chamados/novo')}
+            onClick={() => navigate('/chamados/novo')} 
             className="bg-red-600 hover:bg-red-700 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Novo Chamado
+            Criar Novo Chamado
           </Button>
         </div>
       )}
