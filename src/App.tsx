@@ -13,6 +13,8 @@ import { UpdateNotification } from "./components/UpdateNotification";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SuperAdmin from "./pages/SuperAdmin";
+import Usuarios from "./pages/Usuarios";
+import AdminRoute from "./components/AdminRoute";
 
 import Clientes from "./pages/Clientes";
 import ClientCreate from "./pages/ClientCreate";
@@ -44,6 +46,13 @@ const App = () => (
             <Route path="/renovacoes" element={<ProtectedRoute><RenovacoesSimples /></ProtectedRoute>} />
             <Route path="/chamados" element={<ProtectedRoute><Chamados /></ProtectedRoute>} />
             <Route path="/equipes" element={<ProtectedRoute><Equipes /></ProtectedRoute>} />
+            <Route path="/usuarios" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <Usuarios />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
