@@ -9,8 +9,9 @@ export interface Client {
   cnpj_cpf?: string;
   address?: string;
   status: 'em-dia' | 'proximo-vencimento' | 'vencido';
-  last_service_date?: string;
-  next_renewal_date?: string;
+  last_service_date?: string | null;
+  next_service_date?: string | null;
+  next_renewal_date?: string | null;
   organization_id: string;
   created_at: string;
   updated_at: string;

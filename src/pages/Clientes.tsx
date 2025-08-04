@@ -3,18 +3,47 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Eye, Search, Filter, Plus, Edit, Trash } from "lucide-react";
-import { useState } from "react";
+import { 
+  MessageCircle, 
+  Eye, 
+  Search, 
+  Plus, 
+  Edit, 
+  Trash2,
+  Loader2,
+  AlertCircle,
+  FilterX
+} from "lucide-react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useClients } from "@/hooks/useClients";
 import { useWhatsApp } from "@/utils/whatsapp";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("todos");
-  const { clients, loading, deleteClient } = useClients();
+  const [statusFilter, setStatusFilter] = useState("all");
+  const { 
+    clients, 
+    loading, 
+    deleteClient, 
+    setSearchTerm: setClientsSearchTerm,
+    setStatusFilter: setClientsStatusFilter,
+    refreshClients 
+  } = useClients();
+  
   const { sendWhatsAppMessage, isValidPhone } = useWhatsApp();
+
+  // Atualiza os filtros no hook useClients quando mudam
+  useEffect(() => {
+    setClientsSearchTerm(searchTerm);
+  }, [searchTerm, setClientsSearchTerm]);
+
+  useEffect(() => {
+    setClientsStatusFilter(statusFilter);
+  }, [statusFilter, setClientsStatusFilter]);
 
   const handleWhatsAppClick = (client: any) => {
     if (!client.phone) {
@@ -32,75 +61,102 @@ export default function Clientes() {
       clientName: client.name,
       message: `Olá ${client.name}, gostaria de falar sobre seus serviços de dedetização.`
     });
-
-    toast.success('WhatsApp aberto com sucesso!');
   };
-
-  const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (client.phone || '').includes(searchTerm) ||
-                         (client.address || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "todos" || client.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "em-dia":
-        return <Badge variant="default" className="bg-primary text-primary-foreground">Em Dia</Badge>;
+        return <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white">Em Dia</Badge>;
       case "proximo-vencimento":
-        return <Badge variant="secondary" className="bg-yellow-500 text-white">Próximo</Badge>;
+        return <Badge variant="default" className="bg-yellow-500 hover:bg-yellow-600 text-white">Próximo</Badge>;
       case "vencido":
-        return <Badge variant="destructive">Vencido</Badge>;
+        return <Badge variant="destructive" className="hover:bg-red-700">Vencido</Badge>;
       default:
         return <Badge variant="outline">Ativo</Badge>;
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
-      await deleteClient(id);
+    if (window.confirm('Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.')) {
+      const { error } = await deleteClient(id);
+      
+      if (error) {
+        toast.error('Erro ao excluir cliente', {
+          description: error.message || 'Ocorreu um erro ao tentar excluir o cliente.'
+        });
+      } else {
+        toast.success('Cliente excluído com sucesso!');
+        refreshClients();
+      }
+    }
+  };
+
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return 'Nunca';
+    
+    try {
+      return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
+    } catch (error) {
+      return 'Data inválida';
     }
   };
 
   return (
     <AppLayout title="Clientes">
       <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">Lista de Clientes</h1>
+          <Button asChild>
+            <Link to="/clientes/novo" className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Novo Cliente
+            </Link>
+          </Button>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Buscar clientes..."
+              placeholder="Buscar clientes por nome, telefone ou endereço..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
+              disabled={loading}
             />
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2">
             <Button
-              variant={statusFilter === "todos" ? "default" : "outline"}
-              onClick={() => setStatusFilter("todos")}
+              variant={statusFilter === "all" ? "default" : "outline"}
+              onClick={() => setStatusFilter("all")}
+              disabled={loading}
+              className="whitespace-nowrap"
             >
+              <FilterX className="w-4 h-4 mr-2" />
               Todos
             </Button>
             <Button
               variant={statusFilter === "em-dia" ? "default" : "outline"}
               onClick={() => setStatusFilter("em-dia")}
+              disabled={loading}
+              className="whitespace-nowrap"
             >
               Em Dia
             </Button>
             <Button
               variant={statusFilter === "proximo-vencimento" ? "default" : "outline"}
               onClick={() => setStatusFilter("proximo-vencimento")}
+              disabled={loading}
+              className="whitespace-nowrap"
             >
               Próximos
             </Button>
             <Button
               variant={statusFilter === "vencido" ? "default" : "outline"}
               onClick={() => setStatusFilter("vencido")}
+              disabled={loading}
+              className="whitespace-nowrap"
             >
               Vencidos
             </Button>
@@ -114,78 +170,82 @@ export default function Clientes() {
           </Button>
         </div>
 
-        {loading ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Carregando clientes...</p>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {filteredClients.map((client) => (
-              <Card key={client.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-foreground">{client.name}</h3>
-                        {getStatusBadge(client.status)}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                        {client.phone && (
-                          <div>
-                            <span className="font-medium">Telefone:</span> {client.phone}
-                          </div>
-                        )}
-                        {client.last_service_date && (
-                          <div>
-                            <span className="font-medium">Último Serviço:</span> {new Date(client.last_service_date).toLocaleDateString('pt-BR')}
-                          </div>
-                        )}
-                        {client.next_renewal_date && (
-                          <div>
-                            <span className="font-medium">Próxima Renovação:</span>{" "}
-                            <span className={client.status !== "em-dia" ? "text-destructive font-medium" : ""}>
-                              {new Date(client.next_renewal_date).toLocaleDateString('pt-BR')}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      {client.address && (
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          <span className="font-medium">Endereço:</span> {client.address}
+        <div className="grid gap-4">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">Carregando clientes...</p>
+            </div>
+          ) : clients.length === 0 ? (
+            <div className="text-center py-12 space-y-2">
+              <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground" />
+              <h3 className="text-lg font-medium">Nenhum cliente encontrado</h3>
+              <p className="text-muted-foreground">
+                {searchTerm || statusFilter !== 'all' 
+                  ? 'Nenhum cliente corresponde aos filtros atuais.'
+                  : 'Comece adicionando seu primeiro cliente.'}
+              </p>
+              <Button asChild className="mt-4">
+                <Link to="/clientes/novo" className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Adicionar Cliente
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            clients.map((client) => (
+              <Card key={client.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                <CardContent className="p-0">
+                  <div className="p-4 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold truncate">{client.name}</h3>
+                        <div className="flex-shrink-0">
+                          {getStatusBadge(client.status)}
                         </div>
-                      )}
+                      </div>
                       {client.email && (
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          <span className="font-medium">Email:</span> {client.email}
-                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{client.email}</p>
                       )}
                     </div>
-                    
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleWhatsAppClick(client)}
+                        title="Enviar mensagem"
+                        className="text-foreground hover:text-primary"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                        onClick={() => handleWhatsAppClick(client)}
-                        title="Enviar mensagem WhatsApp"
+                        asChild
+                        className="hover:text-primary"
                       >
-                        <MessageCircle className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" asChild>
-                        <Link to={`/clientes/${client.id}/editar`}>
-                          <Edit className="w-4 h-4" />
+                        <Link to={`/clientes/${client.id}`} title="Ver detalhes">
+                          <Eye className="h-4 w-4" />
                         </Link>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
-                        <Eye className="w-4 h-4" />
                       </Button>
                       <Button 
                         variant="ghost" 
+                        size="icon" 
+                        asChild
+                        className="hover:text-primary"
+                      >
+                        <Link to={`/clientes/editar/${client.id}`} title="Editar">
+                          <Edit className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => handleDelete(client.id)}
-                        className="text-destructive hover:text-destructive"
+                        title="Excluir"
+                        className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
                       >
-                        <Trash className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -195,10 +255,10 @@ export default function Clientes() {
           </div>
         )}
 
-        {!loading && filteredClients.length === 0 && (
+        {!loading && clients.length === 0 && (
           <div className="text-center py-8">
             <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== "todos" 
+              {searchTerm || statusFilter !== "all" 
                 ? "Nenhum cliente encontrado com os filtros aplicados." 
                 : "Nenhum cliente cadastrado. Clique em 'Novo Cliente' para começar."
               }
