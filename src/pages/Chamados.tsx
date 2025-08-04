@@ -23,8 +23,17 @@ interface ServiceCall {
   client?: {
     name: string;
     phone?: string;
+    address?: string;
+  };
+  clients?: {
+    name: string;
+    address?: string;
+  };
+  teams?: {
+    name: string;
   };
   scheduled_at?: string;
+  scheduled_date?: string;
   completed_at?: string;
   created_at: string;
   updated_at: string;
@@ -32,6 +41,7 @@ interface ServiceCall {
   assigned_to?: string;
   address?: string;
   notes?: string;
+  team_id?: string;
 }
 
 const SERVICE_CALL_STATUS = {
@@ -393,13 +403,10 @@ export default function Chamados() {
             )}
             <span>Atualizar</span>
           </Button>
-          <Button 
-            className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
-            onClick={() => navigate('/chamados/novo')}
-          >
-            <Plus className="w-4 h-4" />
-            <span>Novo Chamado</span>
-          </Button>
+            >
+              Todos
+            </Button>
+            <Button
               variant={statusFilter === "pending" ? "default" : "outline"}
               onClick={() => setStatusFilter("pending")}
               className={statusFilter === "pending" ? "bg-yellow-500 hover:bg-yellow-600 text-white" : ""}
