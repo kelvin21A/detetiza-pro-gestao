@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Eye, CheckCircle, Calendar, User, MapPin, Search, Loader2 } from "lucide-react";
+import { Plus, Edit, Eye, CheckCircle, CheckCircle2, Calendar, User, MapPin, Search, Loader2, Trash2, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,26 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+interface ServiceCall {
+  id: string;
+  title: string;
+  description: string;
+  status: ServiceCallStatus;
+  client?: {
+    name: string;
+    phone?: string;
+  };
+  scheduled_at?: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+  organization_id: string;
+  assigned_to?: string;
+  address?: string;
+  notes?: string;
+}
 
 const SERVICE_CALL_STATUS = {
   pending: { label: 'Pendente', color: 'bg-yellow-500 hover:bg-yellow-600' },
@@ -487,107 +507,94 @@ export default function Chamados() {
         ))}
       </div>
 
-        {filteredCalls.length === 0 && (
-          <div className="text-center py-12">
-            <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              Nenhum chamado encontrado
-            </h3>
-            <p className="text-muted-foreground">
-              {searchTerm ? "Tente ajustar sua busca" : "Nenhum chamado cadastrado ainda"}
-            </p>
+      {/* Empty State */}
+      {!isLoading && filteredCalls.length === 0 && (
+        <div className="border-2 border-dashed rounded-lg p-12 text-center">
+          <div className="mx-auto w-16 h-16 text-muted-foreground mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-full h-full">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           </div>
-        )}
-        
-        {/* Empty State */}
-        {!isLoading && filteredCalls.length === 0 && (
-          <div className="border-2 border-dashed rounded-lg p-12 text-center">
-            <div className="mx-auto w-16 h-16 text-muted-foreground mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-full h-full">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+          <h3 className="text-lg font-medium text-foreground mb-1">Nenhum chamado encontrado</h3>
+          <p className="text-muted-foreground mb-6">
+            {searchTerm 
+              ? 'Nenhum chamado corresponde à sua busca. Tente ajustar os filtros.'
+              : 'Comece criando um novo chamado de serviço.'}
+          </p>
+          <Button 
+            onClick={() => navigate('/chamados/novo')}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Chamado
+          </Button>
+        </div>
+      )}
+      
+      {/* Completion Dialog */}
+      <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Concluir Chamado</DialogTitle>
+            <DialogDescription>
+              Adicione observações sobre a conclusão deste chamado.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="completionNotes">Observações</Label>
+              <Textarea
+                id="completionNotes"
+                placeholder="Descreva o que foi feito..."
+                value={completionNotes}
+                onChange={(e) => setCompletionNotes(e.target.value)}
+                className="min-h-[120px]"
+              />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-1">Nenhum chamado encontrado</h3>
-            <p className="text-muted-foreground mb-6">
-              {searchTerm 
-                ? 'Nenhum chamado corresponde à sua busca. Tente ajustar os filtros.'
-                : 'Comece criando um novo chamado de serviço.'}
-            </p>
+            
+            <div className="space-y-2">
+              <Label htmlFor="serviceType">Tipo de Serviço</Label>
+              <Select defaultValue="dedetization">
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo de serviço" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(SERVICE_TYPES).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
             <Button 
-              onClick={() => navigate('/chamados/novo')}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              variant="outline" 
+              onClick={() => setIsCompleteDialogOpen(false)}
+              disabled={isLoading}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Chamado
+              Cancelar
             </Button>
-          </div>
-        )}
-        
-        {/* Completion Dialog */}
-        <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Concluir Chamado</DialogTitle>
-              <DialogDescription>
-                Adicione observações sobre a conclusão deste chamado.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="completionNotes">Observações</Label>
-                <Textarea
-                  id="completionNotes"
-                  placeholder="Descreva o que foi feito..."
-                  value={completionNotes}
-                  onChange={(e) => setCompletionNotes(e.target.value)}
-                  className="min-h-[120px]"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="serviceType">Tipo de Serviço</Label>
-                <Select defaultValue="dedetization">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo de serviço" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(SERVICE_TYPES).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsCompleteDialogOpen(false)}
-                disabled={isLoading}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleCompleteServiceCall}
-                disabled={isLoading}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Concluindo...
-                  </>
-                ) : (
-                  'Confirmar Conclusão'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+            <Button 
+              onClick={handleCompleteServiceCall}
+              disabled={isLoading}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Concluindo...
+                </>
+              ) : (
+                'Confirmar Conclusão'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
