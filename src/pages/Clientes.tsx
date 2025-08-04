@@ -254,7 +254,6 @@ export default function Clientes() {
             ))
           )}
         </div>
-        )}
       </div>
     </AppLayout>
   );
