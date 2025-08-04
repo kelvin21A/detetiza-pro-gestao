@@ -183,7 +183,7 @@ export default function Clientes() {
               <p className="text-muted-foreground">
                 {searchTerm || statusFilter !== 'all' 
                   ? 'Nenhum cliente corresponde aos filtros atuais.'
-                  : 'Comece adicionando seu primeiro cliente.'}
+                  : 'Nenhum cliente cadastrado. Clique em "Novo Cliente" para começar.'}
               </p>
               <Button asChild className="mt-4">
                 <Link to="/clientes/novo" className="flex items-center gap-2">
@@ -251,19 +251,9 @@ export default function Clientes() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
-
-        {!loading && clients.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== "all" 
-                ? "Nenhum cliente encontrado com os filtros aplicados." 
-                : "Nenhum cliente cadastrado. Clique em 'Novo Cliente' para começar."
-              }
-            </p>
-          </div>
+            ))
+          )}
+        </div>
         )}
       </div>
     </AppLayout>
