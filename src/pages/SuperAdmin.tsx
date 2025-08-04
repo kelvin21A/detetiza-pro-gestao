@@ -68,7 +68,9 @@ const SuperAdmin: React.FC = () => {
   // Criar nova detetizadora + admin inicial
   const createOrganization = async () => {
     if (!newOrg.name || !newOrg.slug || !newOrg.adminEmail || !newOrg.adminPassword) {
-      toast.error('Preencha todos os campos obrigatórios');
+      toast.error('Preencha todos os campos obrigatórios', {
+        style: { background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FCA5A5' }
+      });
       return;
     }
 
@@ -87,7 +89,16 @@ const SuperAdmin: React.FC = () => {
           active: true,
           settings: {
             company_name: newOrg.name,
-            theme_color: '#FF0000'
+            theme_color: '#FF3B30',
+            renewal_period: 12,
+            custom_statuses: [
+              'Em orçamento',
+              'Aguardando aprovação',
+              'Agendado',
+              'Em andamento',
+              'Concluído',
+              'Cancelado'
+            ]
           }
         })
         .select()
@@ -184,22 +195,23 @@ const SuperAdmin: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-black">Super Admin - DetetizaPro</h1>
-            <p className="text-gray-600">Gerenciamento de Detetizadoras</p>
+            <h1 className="text-2xl font-bold text-black">Painel de Controle - ServiceFlow Pro</h1>
+            <p className="text-gray-900">Gerenciamento de Empresas Clientes</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-red-600 hover:bg-red-700 text-white">
+              <Button className="bg-red-600 hover:bg-red-700 text-white font-medium transition-colors">
                 <Plus className="w-4 h-4 mr-2" />
-                Cadastrar Nova Detetizadora
+                Nova Empresa Cliente
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle className="text-black">Nova Detetizadora</DialogTitle>
+                <DialogTitle className="text-black text-xl font-semibold">Cadastrar Nova Empresa</DialogTitle>
+                <p className="text-sm text-gray-900 mt-1">Preencha os dados da empresa e do administrador inicial</p>
               </DialogHeader>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Dados da Empresa */}
@@ -334,30 +346,45 @@ const SuperAdmin: React.FC = () => {
       {/* Lista de Organizações */}
       <div className="p-6">
         {loading ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600">Carregando detetizadoras...</p>
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+            <p className="text-gray-900 font-medium">Carregando empresas...</p>
           </div>
         ) : organizations.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
             <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">Nenhuma detetizadora cadastrada</p>
-            <p className="text-sm text-gray-500">Clique em "Cadastrar Nova Detetizadora" para começar</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhuma empresa cadastrada</h3>
+            <p className="text-gray-900 mb-4">Comece cadastrando sua primeira empresa cliente</p>
+            <Button 
+              onClick={() => setIsDialogOpen(true)}
+              className="bg-red-600 hover:bg-red-700 text-white font-medium"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Cadastrar Primeira Empresa
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {organizations.map((org) => (
-              <Card key={org.id} className="border border-gray-200">
+              <Card key={org.id} className="border border-gray-200 hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg text-black">{org.name}</CardTitle>
+                    <CardTitle className="text-lg text-black font-semibold">{org.name}</CardTitle>
                     <Badge 
                       variant={org.active ? "default" : "secondary"}
-                      className={org.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+                      className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        org.active 
+                          ? 'bg-green-50 text-green-800 border-green-100' 
+                          : 'bg-gray-50 text-gray-800 border-gray-200'
+                      } border`}
                     >
                       {org.active ? 'Ativa' : 'Inativa'}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600">@{org.slug}</p>
+                  <div className="flex items-center text-sm text-gray-900 mt-1">
+                    <span className="text-gray-900">ID:</span>
+                    <span className="ml-1 font-mono bg-gray-100 px-2 py-0.5 rounded text-xs">{org.id.substring(0, 8)}...</span>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {org.email && (
