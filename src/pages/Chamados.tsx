@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AppLayout } from "@/components/layout/AppLayout";
+import AppLayout from "@/components/layout/AppLayout";
 import { useServiceCalls, ServiceCallStatus, ServiceType } from "@/hooks/useServiceCalls";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,7 +39,6 @@ interface ServiceCall {
   updated_at: string;
   organization_id: string;
   assigned_to?: string;
-  address?: string;
   notes?: string;
   team_id?: string;
 }
@@ -344,9 +343,9 @@ export default function Chamados() {
 
           <div className="flex flex-wrap gap-2">
             <Button
-              variant={statusFilter === "all" ? "default" : "outline"}
-              onClick={() => setStatusFilter("all")}
-              className={statusFilter === "all" ? "bg-primary text-primary-foreground" : ""}
+              variant={statusFilter === "todos" ? "default" : "outline"}
+              onClick={() => setStatusFilter("todos")}
+              className={statusFilter === "todos" ? "bg-primary text-primary-foreground" : ""}
               disabled={isLoading}
             >
               Todos
