@@ -1,272 +1,190 @@
-import { useState } from "react";
-import { Plus, Edit, Eye, CheckCircle2, Calendar, User, MapPin, Search, Loader2, Trash2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, Edit, Eye, Calendar, User, Search, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge, BadgeProps } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-<<<<<<< HEAD
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import AppLayout from "@/components/layout/AppLayout";
-import { useServiceCalls, ServiceCallStatus, ServiceType } from "@/hooks/useServiceCalls";
-import { useToast } from "@/hooks/use-toast";
-
-interface ServiceCall {
-  id: string;
-  title: string;
-  description: string;
-  status: ServiceCallStatus;
-  client?: {
-    name: string;
-    phone?: string;
-    address?: string;
-  };
-  clients?: {
-    name: string;
-    address?: string;
-  };
-  teams?: {
-    name: string;
-  };
-  scheduled_at?: string;
-  scheduled_date?: string;
-  completed_at?: string;
-  created_at: string;
-  updated_at: string;
-  organization_id: string;
-  assigned_to?: string;
-  notes?: string;
-  team_id?: string;
-}
-=======
-import { AppLayout } from "@/components/layout/AppLayout";
-
-// Simple mock data for demo
-const mockServiceCalls = [
-  {
-    id: "1",
-    title: "Dedetização Comercial",
-    description: "Aplicação preventiva em estabelecimento comercial",
-    status: "pending",
-    clients: { name: "Padaria Central", address: "Rua das Flores, 123" },
-    teams: { name: "Equipe A" },
-    scheduled_date: "2024-01-20T14:00:00Z",
-    created_at: "2024-01-15T10:00:00Z",
-    updated_at: "2024-01-15T10:00:00Z",
-    organization_id: "1"
-  }
-];
->>>>>>> 6c05e2b1721e99c82147275137e70177a51070d8
-
-const SERVICE_CALL_STATUS = {
-  pending: { label: 'Pendente', color: 'bg-yellow-500' },
-  in_progress: { label: 'Em Andamento', color: 'bg-blue-500' },
-  completed: { label: 'Concluído', color: 'bg-green-500' },
-  cancelled: { label: 'Cancelado', color: 'bg-red-500' }
-};
+import { useServiceCalls, ServiceCall, ServiceCallStatus } from "@/hooks/useServiceCalls";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Chamados() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { serviceCalls, isLoading, isError, deleteServiceCall } = useServiceCalls();
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("todos");
-  const [serviceCalls] = useState(mockServiceCalls);
+  const [statusFilter, setStatusFilter] = useState<ServiceCallStatus | 'todos'>('todos');
 
-  const filteredCalls = serviceCalls.filter(call => {
-    const matchesSearch = searchTerm === '' || 
-      call.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      call.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      call.clients.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'todos' || call.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredCalls = useMemo(() => {
+    return serviceCalls.filter(call => {
+      const clientName = call.clients?.name || '';
+      const matchesSearch = searchTerm === '' ||
+        call.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (call.description && call.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        clientName.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
+      const matchesStatus = statusFilter === 'todos' || call.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [serviceCalls, searchTerm, statusFilter]);
+
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'N/A';
+    try {
+      return format(parseISO(dateString), 'dd/MM/yyyy HH:mm', { locale: ptBR });
+    } catch (error) {
+      return 'Data inválida';
+    }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusInfo = SERVICE_CALL_STATUS[status] || { label: status, color: 'bg-gray-500' };
-    return (
-      <Badge className={`${statusInfo.color} text-white`}>
-        {statusInfo.label}
-      </Badge>
-    );
+  const getStatusBadge = (status: ServiceCallStatus | null) => {
+    const statusMap: Record<NonNullable<ServiceCallStatus>, { label: string; variant: BadgeProps['variant'] }> = {
+      'pending': { label: 'Pendente', variant: 'default' },
+      'in_progress': { label: 'Em Andamento', variant: 'secondary' },
+      'completed': { label: 'Concluído', variant: 'default' },
+      'cancelled': { label: 'Cancelado', variant: 'destructive' },
+    };
+    const statusInfo = status ? statusMap[status] : null;
+    if (!statusInfo) return <Badge variant="outline">Indefinido</Badge>;
+    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteServiceCall(id);
+      toast({
+        title: "Chamado excluído com sucesso!",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir chamado",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const statusFilters: { value: ServiceCallStatus | 'todos', label: string }[] = [
+    { value: 'todos', label: 'Todos' },
+    { value: 'pending', label: 'Pendentes' },
+    { value: 'in_progress', label: 'Em Andamento' },
+    { value: 'completed', label: 'Concluídos' },
+    { value: 'cancelled', label: 'Cancelados' },
+  ];
 
   return (
     <AppLayout title="Chamados de Serviço">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col space-y-2">
-          <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
+          <div>
             <h1 className="text-3xl font-bold tracking-tight">Chamados</h1>
-            <Button 
-              onClick={() => navigate('/chamados/novo')} 
-              className="bg-red-600 hover:bg-red-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Chamado
-            </Button>
+            <p className="text-muted-foreground">Gerencie os chamados de serviço da sua equipe.</p>
           </div>
-          <p className="text-muted-foreground">Gerencie os chamados de serviço da sua equipe.</p>
+          <Button onClick={() => navigate('/chamados/novo')} className="bg-red-600 hover:bg-red-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Chamado
+          </Button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por cliente, endereço ou descrição..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por título, cliente..."
+              className="pl-10 w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={statusFilter === "todos" ? "default" : "outline"}
-              onClick={() => setStatusFilter("todos")}
-<<<<<<< HEAD
-              className={statusFilter === "todos" ? "bg-primary text-primary-foreground" : ""}
-              disabled={isLoading}
-=======
->>>>>>> 6c05e2b1721e99c82147275137e70177a51070d8
-            >
-              Todos
-            </Button>
-            <Button
-              variant={statusFilter === "pending" ? "default" : "outline"}
-              onClick={() => setStatusFilter("pending")}
-            >
-              Pendentes
-            </Button>
-            <Button
-              variant={statusFilter === "in_progress" ? "default" : "outline"}
-              onClick={() => setStatusFilter("in_progress")}
-            >
-              Em Andamento
-            </Button>
-            <Button
-              variant={statusFilter === "completed" ? "default" : "outline"}
-              onClick={() => setStatusFilter("completed")}
-            >
-              Concluídos
-            </Button>
+          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+            {statusFilters.map(filter => (
+              <Button
+                key={filter.value}
+                variant={statusFilter === filter.value ? 'default' : 'outline'}
+                onClick={() => setStatusFilter(filter.value)}
+                className="shrink-0"
+              >
+                {filter.label}
+              </Button>
+            ))}
           </div>
         </div>
 
-        {/* Service Calls Grid */}
-        <div className="grid gap-4">
-          {filteredCalls.map((call) => (
-            <Card key={call.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-3 mb-3">
-                      <h3 className="font-semibold text-foreground text-lg">
-                        {call.clients.name}
-                      </h3>
-                      {getStatusBadge(call.status)}
-                      <span className="text-sm text-muted-foreground">
-                        #{call.id.substring(0, 6).toUpperCase()}
-                      </span>
+        {isLoading && (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-16 w-16 animate-spin text-red-600" />
+          </div>
+        )}
+
+        {isError && (
+          <div className="text-center py-12 px-4 border-2 border-dashed rounded-lg">
+            <p className="text-red-600 font-semibold">Erro ao carregar os chamados.</p>
+            <p className="text-muted-foreground">Tente novamente mais tarde.</p>
+          </div>
+        )}
+
+        {!isLoading && !isError && filteredCalls.length > 0 && (
+          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            {filteredCalls.map((call) => (
+              <Card key={call.id} className="flex flex-col justify-between hover:shadow-lg transition-shadow">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-bold">{call.title}</h3>
+                      <p className="text-sm text-muted-foreground">{call.clients?.name}</p>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-foreground">{call.title}</h4>
-                      <p className="text-muted-foreground">{call.description}</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm mt-4">
-                      <div className="flex items-start gap-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div>
-                          <div className="text-muted-foreground">Agendado para</div>
-                          <div className="font-medium">{formatDate(call.scheduled_date)}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2">
-                        <User className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div>
-                          <div className="text-muted-foreground">Técnico</div>
-                          <div className="font-medium">
-                            {call.teams.name}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2">
-                        <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div>
-                          <div className="text-muted-foreground">Local</div>
-                          <div className="font-medium">
-                            {call.clients.address}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    {getStatusBadge(call.status)}
                   </div>
+                  <p className="text-sm text-muted-foreground line-clamp-2 h-[40px]">{call.description}</p>
                   
-                  <div className="flex flex-col sm:flex-row lg:flex-col gap-2 w-full lg:w-auto">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 justify-start"
-                      onClick={() => navigate(`/chamados/${call.id}`)}
-                    >
-                      <Eye className="w-4 h-4" />
-                      Visualizar
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 justify-start"
-                      onClick={() => navigate(`/chamados/editar/${call.id}`)}
-                    >
-                      <Edit className="w-4 h-4" />
-                      Editar
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2 justify-start text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Excluir
-                    </Button>
+                  <div className="grid grid-cols-2 gap-4 text-sm pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <span>{formatDate(call.scheduled_date)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      <span>{call.teams?.name || 'Não atribuído'}</span>
+                    </div>
                   </div>
+                </CardContent>
+                <div className="flex items-center justify-end gap-2 p-4 border-t bg-muted/50">
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/chamados/${call.id}`)}>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Ver
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/chamados/editar/${call.id}`)}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(call.id)}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        )}
 
-        {/* Empty State */}
-        {filteredCalls.length === 0 && (
+        {!isLoading && !isError && filteredCalls.length === 0 && (
           <div className="border-2 border-dashed rounded-lg p-12 text-center">
-            <div className="mx-auto w-16 h-16 text-muted-foreground mb-4">
+             <div className="mx-auto w-16 h-16 text-muted-foreground mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-full h-full">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
             <h3 className="text-lg font-medium text-foreground mb-1">Nenhum chamado encontrado</h3>
             <p className="text-muted-foreground mb-6">
-              Comece criando um novo chamado de serviço.
+              {searchTerm || statusFilter !== 'todos' ? 'Ajuste seus filtros ou crie um novo chamado.' : 'Comece criando um novo chamado de serviço.'}
             </p>
-            <Button 
-              onClick={() => navigate('/chamados/novo')} 
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
+            <Button onClick={() => navigate('/chamados/novo')} className="bg-red-600 hover:bg-red-700">
               <Plus className="w-4 h-4 mr-2" />
               Criar Novo Chamado
             </Button>
