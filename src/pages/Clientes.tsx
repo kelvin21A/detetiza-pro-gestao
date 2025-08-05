@@ -9,11 +9,12 @@ import { Link } from "react-router-dom";
 import { useClients, Client } from "@/hooks/useClients";
 import { useWhatsApp } from "@/utils/whatsapp";
 import { Loader2 } from "lucide-react";
+import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon';
 
 export default function Clientes() {
   const { toast } = useToast();
   const { clients, isLoading, isError, deleteClient } = useClients();
-  const { sendWhatsAppMessage, isValidPhone } = useWhatsApp();
+  const { isValidPhone } = useWhatsApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
@@ -39,18 +40,13 @@ export default function Clientes() {
   }, [clients, searchTerm, statusFilter]);
 
   const handleWhatsAppClick = (client: Client) => {
-    if (!client.phone) {
-      toast({ description: 'Cliente não possui telefone cadastrado' });
+    if (!client.phone || !isValidPhone(client.phone)) {
+      toast({ title: 'Atenção', description: 'O número de WhatsApp do cliente não é válido ou não foi cadastrado.' });
       return;
     }
-
-    if (!isValidPhone(client.phone)) {
-      toast({ title: 'Atenção', description: 'O número de WhatsApp do cliente não é válido.' });
-      return;
-    }
-
-    sendWhatsAppMessage(client.phone, `Olá, ${client.name}!`);
-    toast({ title: 'Sucesso', description: 'Mensagem enviada para o WhatsApp.' });
+    const message = encodeURIComponent(`Olá, ${client.name}! Tudo bem? Entramos em contato a respeito dos seus serviços com a DetetizaPro.`);
+    const url = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${message}`;
+    window.open(url, '_blank');
   };
 
   const getStatusBadge = (status: string) => {
@@ -139,11 +135,10 @@ export default function Clientes() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
                       onClick={() => handleWhatsAppClick(client)}
                       title="Enviar mensagem WhatsApp"
                     >
-                      <MessageCircle className="w-5 h-5" />
+                      <WhatsAppIcon className="h-5 w-5" />
                     </Button>
                     <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" asChild>
                       <Link to={`/clientes/${client.id}/editar`} title="Editar Cliente">

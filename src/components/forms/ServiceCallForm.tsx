@@ -46,6 +46,7 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
           status: initialData.status as 'pending' | 'in_progress' | 'completed', // Type assertion
         }
       : { 
+          client_id: '',
           status: 'pending', 
           description: '', 
           team_id: '',

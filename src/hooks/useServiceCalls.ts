@@ -1,33 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase.js';
+import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/types/database.types';
 
 // Define o tipo ServiceCall baseado no schema do DB, incluindo o nome do cliente
 export type ServiceCall = Database['public']['Tables']['service_calls']['Row'] & {
-  clients: {
-    name: string;
-  } | null;
-  teams: {
-    name: string;
-  } | null;
+  clients: { name: string } | null;
+  teams: { name: string } | null;
 };
 
-// Define o tipo para criação de um novo chamado, omitindo campos gerados pelo DB
-export type NewServiceCall = Omit<ServiceCall, 'id' | 'created_at' | 'organization_id' | 'clients'>;
+// Define o tipo para criação de um novo chamado, baseado no tipo de inserção do Supabase
+export type NewServiceCall = Database['public']['Tables']['service_calls']['Insert'];
 
-// Define o tipo para atualização de um chamado, tornando todos os campos opcionais exceto o ID
-export type UpdateServiceCall = Partial<Omit<Database['public']['Tables']['service_calls']['Row'], 'id' | 'created_at' | 'organization_id'>> & {
-  id: string;
-};
+// Define o tipo para atualização de um chamado
+export type UpdateServiceCall = Database['public']['Tables']['service_calls']['Update'];
 
 export function useServiceCall(id: string | undefined) {
-  const { user } = useAuth();
-  const organizationId = user?.user_metadata.organization_id;
+  const { organizationId } = useAuth();
 
   const { data: serviceCall, isLoading, isError } = useQuery<ServiceCall | null>({
-    queryKey: ['service_call', id],
+    queryKey: ['service_call', id, organizationId],
     queryFn: async () => {
       if (!id || !organizationId) return null;
 
@@ -47,7 +40,7 @@ export function useServiceCall(id: string | undefined) {
       }
       return data as ServiceCall;
     },
-    enabled: !!user && !!id && !!organizationId,
+    enabled: !!id && !!organizationId,
   });
 
   return { serviceCall, isLoading, isError };
@@ -56,14 +49,12 @@ export function useServiceCall(id: string | undefined) {
 export const useServiceCalls = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-
-  const organizationId = user?.user_metadata.organization_id;
+  const { organizationId } = useAuth();
 
   const { data: serviceCalls, isLoading, isError } = useQuery({
     queryKey: ['service_calls', organizationId],
     queryFn: async () => {
-      if (!organizationId) throw new Error('ID da organização não disponível.');
+      if (!organizationId) return [];
 
       const { data, error } = await supabase
         .from('service_calls')
@@ -79,28 +70,28 @@ export const useServiceCalls = () => {
     enabled: !!organizationId,
   });
 
-  const { mutate: createServiceCall } = useMutation({
+  const { mutateAsync: createServiceCall } = useMutation({
     mutationFn: async (newCall: NewServiceCall) => {
       if (!organizationId) throw new Error('ID da organização não disponível.');
       
       const { data, error } = await supabase
         .from('service_calls')
-        .insert([{ ...newCall, organization_id: organizationId }])
-        .select();
+        .insert({ ...newCall, organization_id: organizationId })
+        .select()
+        .single();
 
       if (error) throw new Error(error.message);
       return data;
     },
     onSuccess: () => {
-      toast({ description: 'Chamado criado com sucesso!' });
       queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
     },
     onError: (error: Error) => {
-      toast({ variant: 'destructive', title: 'Erro', description: `Não foi possível criar o chamado: ${error.message}` });
+      toast({ variant: 'destructive', title: 'Erro ao criar chamado', description: error.message });
     },
   });
 
-  const { mutate: updateServiceCall } = useMutation<ServiceCall, Error, { id: string; updates: Partial<NewServiceCall> }>({
+  const { mutateAsync: updateServiceCall } = useMutation<ServiceCall, Error, { id: string; updates: UpdateServiceCall }>({
     mutationFn: async ({ id, updates }) => {
       const { data, error } = await supabase
         .from('service_calls')
@@ -114,15 +105,14 @@ export const useServiceCalls = () => {
       return data;
     },
     onSuccess: () => {
-      toast({ description: 'Chamado atualizado com sucesso!' });
       queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
     },
     onError: (error: Error) => {
-      toast({ variant: 'destructive', title: 'Erro', description: `Não foi possível atualizar o chamado: ${error.message}` });
+      toast({ variant: 'destructive', title: 'Erro ao atualizar chamado', description: error.message });
     },
   });
 
-  const { mutate: deleteServiceCall } = useMutation({
+  const { mutateAsync: deleteServiceCall } = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase
         .from('service_calls')
@@ -134,11 +124,10 @@ export const useServiceCalls = () => {
       return data;
     },
     onSuccess: () => {
-      toast({ description: 'Chamado excluído com sucesso!' });
       queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
     },
     onError: (error: Error) => {
-      toast({ variant: 'destructive', title: 'Erro', description: `Não foi possível excluir o chamado: ${error.message}` });
+      toast({ variant: 'destructive', title: 'Erro ao excluir chamado', description: error.message });
     },
   });
 
