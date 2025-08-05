@@ -32,7 +32,7 @@ const Usuarios = () => {
   const [formData, setFormData] = useState({
     email: '',
     full_name: '',
-    role: 'technician' as const,
+    role: 'technician' as 'admin' | 'manager' | 'technician',
     password: '',
     confirmPassword: ''
   });
@@ -89,7 +89,7 @@ const Usuarios = () => {
     setFormData({
       email: user.email,
       full_name: user.full_name,
-      role: user.role,
+      role: user.role as 'admin' | 'manager' | 'technician',
       password: '',
       confirmPassword: ''
     });

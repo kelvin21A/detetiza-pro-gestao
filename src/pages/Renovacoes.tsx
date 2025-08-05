@@ -152,14 +152,14 @@ export default function Renovacoes() {
                 Cliente {sortConfig?.key === 'clients' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
               </div>
             </TableHead>
-            <TableHead onClick={() => requestSort('details')}>
+            <TableHead onClick={() => requestSort('service_type')}>
               <div className="flex items-center cursor-pointer">
-                Plano {sortConfig?.key === 'details' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+                Plano {sortConfig?.key === 'service_type' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
               </div>
             </TableHead>
-            <TableHead onClick={() => requestSort('price')}>
+            <TableHead onClick={() => requestSort('value')}>
               <div className="flex items-center cursor-pointer">
-                Valor {sortConfig?.key === 'price' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+                Valor {sortConfig?.key === 'value' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
               </div>
             </TableHead>
             <TableHead onClick={() => requestSort('end_date')}>
@@ -175,8 +175,8 @@ export default function Renovacoes() {
           {sortedRenovacoes.map((renovacao) => (
             <TableRow key={renovacao.id}>
               <TableCell>{renovacao.clients?.name || 'Cliente não encontrado'}</TableCell>
-              <TableCell>{renovacao.details || 'N/A'}</TableCell>
-              <TableCell>R$ {renovacao.price?.toFixed(2) || '0.00'}</TableCell>
+              <TableCell>{renovacao.service_type || 'N/A'}</TableCell>
+              <TableCell>R$ {renovacao.value?.toFixed(2) || '0.00'}</TableCell>
               <TableCell>{new Date(renovacao.end_date).toLocaleDateString('pt-BR')}</TableCell>
               <TableCell>
                 {getStatusBadge(renovacao.end_date)}
