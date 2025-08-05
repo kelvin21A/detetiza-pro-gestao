@@ -81,7 +81,7 @@ export const useServiceCalls = () => {
       const callWithDefaults = {
         ...newCall,
         organization_id: organizationId,
-        status: newCall.status || 'agendado',
+        status: newCall.status || 'pending',
       };
 
       const { data, error } = await supabase

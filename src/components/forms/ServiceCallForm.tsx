@@ -16,9 +16,9 @@ import { useNavigate } from 'react-router-dom';
 const formSchema = z.object({
   title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres.' }),
   client_id: z.string().uuid({ message: 'Selecione um cliente.' }),
-  team_id: z.string().uuid({ message: 'Selecione uma equipe.' }).optional().or(z.literal('')), // Aceita string vazia
+  team_id: z.string().uuid({ message: 'Selecione uma equipe.' }).optional().or(z.literal('')), 
   description: z.string().min(5, { message: 'A descrição deve ter pelo menos 5 caracteres.' }),
-  status: z.enum(['pending', 'in_progress', 'completed']), // CORREÇÃO: Usa valores em inglês
+  status: z.enum(['pending', 'in_progress', 'completed']).optional(), 
   scheduled_date: z.string().refine((date) => !isNaN(Date.parse(date)), { message: 'Data inválida.' }),
 });
 
@@ -39,21 +39,18 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
 
   const form = useForm<ServiceCallFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: isEditMode
+    defaultValues: initialData
       ? { 
-          title: initialData.title,
           ...initialData,
           team_id: initialData.team_id || '',
           scheduled_date: new Date(initialData.scheduled_date).toISOString().substring(0, 16),
-          status: initialData.status as 'pending' | 'in_progress' | 'completed', // CORREÇÃO: Type assertion para inglês
         }
       : { 
           title: '',
           client_id: '',
-          status: 'pending', // CORREÇÃO: Valor padrão em inglês
           description: '', 
           team_id: '',
-          scheduled_date: new Date().toISOString().substring(0, 16) 
+          scheduled_date: new Date().toISOString().substring(0, 16),
         },
   });
 
@@ -61,16 +58,20 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
 
   const onSubmit = async (values: ServiceCallFormValues) => {
     try {
-      const submissionData = {
-        ...values,
-        team_id: values.team_id === 'none' ? null : values.team_id || null,
-      };
-
       if (isEditMode) {
+        const submissionData = {
+          ...values,
+          team_id: values.team_id === 'none' ? null : values.team_id || null,
+        };
         await updateServiceCall({ id: initialData.id, updates: submissionData });
         toast({ description: 'Chamado atualizado com sucesso!' });
       } else {
-        await createServiceCall(submissionData as NewServiceCall);
+        const submissionData: NewServiceCall = {
+          ...values,
+          status: 'pending', 
+          team_id: values.team_id === 'none' ? null : values.team_id || null,
+        };
+        await createServiceCall(submissionData);
         toast({ description: 'Chamado criado com sucesso!' });
       }
       navigate('/chamados');
@@ -171,28 +172,30 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="in_progress">Em Andamento</SelectItem>
-                  <SelectItem value="completed">Concluído</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {isEditMode && (
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="in_progress">Em Andamento</SelectItem>
+                    <SelectItem value="completed">Concluído</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
