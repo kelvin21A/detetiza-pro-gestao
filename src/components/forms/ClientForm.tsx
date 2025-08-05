@@ -23,7 +23,6 @@ const formSchema = z.object({
   next_renewal_date: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   state: z.string().nullable().optional(),
-  type: z.enum(['residencial', 'comercial']).nullable().optional(),
   zip_code: z.string().nullable().optional(),
 });
 
@@ -56,7 +55,6 @@ export function ClientForm({ initialData }: ClientFormProps) {
       next_renewal_date: '',
       notes: '',
       state: '',
-      type: 'residencial',
       zip_code: '',
     },
   });
