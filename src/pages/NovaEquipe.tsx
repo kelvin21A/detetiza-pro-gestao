@@ -1,4 +1,4 @@
-import TeamForm from '@/components/forms/TeamForm';
+import { TeamForm } from '@/components/forms/TeamForm';
 
 const NovaEquipe = () => {
   return (

@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import ClientForm from '@/components/forms/ClientForm';
+import { ClientForm } from '@/components/forms/ClientForm';
 import { useClient } from '@/hooks/useClients';
 import { Loader2 } from 'lucide-react';
 
