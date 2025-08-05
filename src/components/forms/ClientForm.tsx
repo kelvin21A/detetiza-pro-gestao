@@ -62,18 +62,18 @@ export function ClientForm({ initialData }: ClientFormProps) {
   const isLoading = form.formState.isSubmitting;
 
   const onSubmit = async (values: ClientFormValues) => {
+    // Garante que strings vazias para campos opcionais sejam convertidas para null
+    const dataToSave = Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [key, value === '' ? null : value])
+    );
+
     try {
       if (isEditMode && initialData) {
-        await updateClient({ id: initialData.id, updates: values });
+        // @ts-ignore
+        await updateClient({ id: initialData.id, updates: dataToSave });
       } else {
-              const valuesToSave = {
-        ...values,
-        email: values.email || null,
-        phone: values.phone || null,
-        address: values.address || null,
-      };
-      // @ts-ignore
-      await createClient(valuesToSave);
+        // @ts-ignore
+        await createClient(dataToSave);
       }
       navigate('/clientes');
     } catch (error) {
