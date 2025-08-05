@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Eye, Search, Filter, Edit, Trash, Plus, WhatsAppIcon } from "lucide-react";
+import { MessageCircle, Eye, Search, Filter, Edit, Trash, Plus, Loader2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useClients, Client } from "@/hooks/useClients";
 import { useWhatsApp } from "@/utils/whatsapp";
-import { Loader2 } from "lucide-react";
+import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon';
 
 export default function Clientes() {
   const { toast } = useToast();
@@ -131,17 +131,17 @@ export default function Clientes() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleWhatsAppClick(client)}
+                    <a 
+                      href={`https://wa.me/55${client.phone?.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       title="Enviar mensagem WhatsApp"
                     >
-                      <Button size="sm" className="w-full justify-start bg-green-500 hover:bg-green-600 text-white">
-                        <WhatsAppIcon className="mr-2 h-4 w-4" />
-                        WhatsApp
+                      <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-2">
+                        <WhatsAppIcon className="h-4 w-4" />
+                        <span className="hidden sm:inline">WhatsApp</span>
                       </Button>
-                    </Button>
+                    </a>
                     <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" asChild>
                       <Link to={`/clientes/${client.id}/editar`} title="Editar Cliente">
                         <Edit className="w-5 h-5" />
