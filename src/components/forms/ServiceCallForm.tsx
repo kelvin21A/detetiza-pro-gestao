@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 
 const formSchema = z.object({
+  title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres.' }),
   client_id: z.string().uuid({ message: 'Selecione um cliente.' }),
   team_id: z.string().uuid({ message: 'Selecione uma equipe.' }).optional().or(z.literal('')), // Aceita string vazia
   description: z.string().min(5, { message: 'A descrição deve ter pelo menos 5 caracteres.' }),
@@ -40,12 +41,14 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: isEditMode
       ? { 
+          title: initialData.title,
           ...initialData,
           team_id: initialData.team_id || '',
           scheduled_date: new Date(initialData.scheduled_date).toISOString().substring(0, 16),
           status: initialData.status as 'pending' | 'in_progress' | 'completed', // Type assertion
         }
       : { 
+          title: '',
           client_id: '',
           status: 'pending', 
           description: '', 
@@ -79,6 +82,20 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Título do Chamado</FormLabel>
+              <FormControl>
+                <Input placeholder="Ex: Controle de pragas em condomínio" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="client_id"
