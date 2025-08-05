@@ -21,7 +21,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // onAuthStateChange lida tanto com a sessão inicial quanto com as mudanças.
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          const { data: userProfile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching profile on initial load:', error);
+            setProfile(null);
+          } else {
+            setProfile(userProfile);
+          }
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error('Error in checkSession:', error);
+        setUser(null);
+        setProfile(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
+
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
       
@@ -41,8 +72,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setProfile(null);
       }
-      // Garante que o loading termine após a primeira verificação.
-      setLoading(false);
     });
 
     return () => {
