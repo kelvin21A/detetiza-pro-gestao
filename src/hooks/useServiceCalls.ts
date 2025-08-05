@@ -55,17 +55,21 @@ export const useServiceCalls = () => {
     queryKey: ['service_calls', organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
+      try {
+        const { data, error } = await supabase
+          .from('service_calls')
+          .select('*, clients ( name ), teams ( name )')
+          .eq('organization_id', organizationId)
+          .order('scheduled_date', { ascending: false });
 
-      const { data, error } = await supabase
-        .from('service_calls')
-        .select('*, clients ( name ), teams ( name )')
-        .eq('organization_id', organizationId)
-        .order('scheduled_date', { ascending: false });
-
-      if (error) {
-        throw new Error(error.message);
+        if (error) {
+          throw new Error(error.message);
+        }
+        return data as ServiceCall[];
+      } catch (error: any) {
+        console.error("Error fetching service calls:", error);
+        throw new Error("Falha ao buscar os chamados. Verifique sua conexão e tente novamente.");
       }
-      return data as ServiceCall[];
     },
     enabled: !!organizationId,
   });
@@ -74,9 +78,15 @@ export const useServiceCalls = () => {
     mutationFn: async (newCall: NewServiceCall) => {
       if (!organizationId) throw new Error('ID da organização não disponível.');
       
+      const callWithDefaults = {
+        ...newCall,
+        organization_id: organizationId,
+        status: newCall.status || 'agendado',
+      };
+
       const { data, error } = await supabase
         .from('service_calls')
-        .insert({ ...newCall, organization_id: organizationId })
+        .insert(callWithDefaults)
         .select()
         .single();
 

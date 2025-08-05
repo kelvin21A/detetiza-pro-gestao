@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -198,33 +197,31 @@ export default function Renovacoes() {
   }
 
   return (
-    <AppLayout>
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Controle de Renovações</h1>
-        <Card>
-          <CardHeader>
-            <CardTitle>Renovações Pendentes</CardTitle>
-            <div className="flex justify-between items-center mt-4">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Buscar por cliente..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-              <Button variant="outline">
-                <FileDown className="h-4 w-4 mr-2" />
-                Exportar CSV
-              </Button>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Controle de Renovações</h1>
+      <Card>
+        <CardHeader>
+          <CardTitle>Renovações Pendentes</CardTitle>
+          <div className="flex justify-between items-center mt-4">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Buscar por cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
             </div>
-          </CardHeader>
-          <CardContent>
-            {renderContent()}
-          </CardContent>
-        </Card>
-      </div>
-    </AppLayout>
+            <Button variant="outline">
+              <FileDown className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {renderContent()}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

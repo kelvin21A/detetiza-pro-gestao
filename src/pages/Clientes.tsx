@@ -13,7 +13,7 @@ import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
 export default function Clientes() {
   const { toast } = useToast();
   const { clients, isLoading, isError, deleteClient } = useClients();
-  const { isValidPhone } = useWhatsApp();
+  const { isValidPhone, sendMessage } = useWhatsApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
@@ -43,9 +43,11 @@ export default function Clientes() {
       toast({ title: 'Atenção', description: 'O número de WhatsApp do cliente não é válido ou não foi cadastrado.' });
       return;
     }
-    const message = encodeURIComponent(`Olá, ${client.name}! Tudo bem? Entramos em contato a respeito dos seus serviços com a DetetizaPro.`);
-    const url = `https://wa.me/${client.phone.replace(/\D/g, '')}?text=${message}`;
-    window.open(url, '_blank');
+    sendMessage({
+      phone: client.phone,
+      clientName: client.name,
+      message: `Olá, ${client.name}! Tudo bem? Entramos em contato a respeito dos seus serviços com a DetetizaPro.`
+    });
   };
 
   const getStatusBadge = (status: string) => {

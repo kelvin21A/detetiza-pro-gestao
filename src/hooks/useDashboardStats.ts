@@ -15,24 +15,34 @@ export const useDashboardStats = () => {
       }
       const organizationId = user.user_metadata.organization_id;
 
-      const [clientsResult, contractsResult, servicesResult, callsResult, teamsResult] = await Promise.all([
-        supabase.from('clients').select('id', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'em-dia'),
+      const safeQuery = async (query: Promise<{ count: number | null; error: any }>) => {
+        try {
+          const { count, error } = await query;
+          if (error) {
+            console.error('Dashboard stat query failed:', error);
+            return 0;
+          }
+          return count || 0;
+        } catch (error) {
+          console.error('Dashboard stat query threw an exception:', error);
+          return 0;
+        }
+      };
+
+      const [clientsCount, contractsResult, servicesCount, callsCount, teamsCount] = await Promise.all([
+        safeQuery(supabase.from('clients').select('id', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'em-dia')),
         supabase.from('contracts').select('end_date, value', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'active'),
-        supabase.from('service_calls').select('id', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'completed').gte('completed_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
-        supabase.from('service_calls').select('id', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'pending'),
-        supabase.from('teams').select('id', { count: 'exact' }).eq('organization_id', organizationId)
+        safeQuery(supabase.from('service_orders').select('id', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'concluido')),
+        safeQuery(supabase.from('service_calls').select('id', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'agendado')),
+        safeQuery(supabase.from('teams').select('id', { count: 'exact' }).eq('organization_id', organizationId)),
       ]);
 
-      if (clientsResult.error) throw new Error(`Clientes: ${clientsResult.error.message}`);
       if (contractsResult.error) throw new Error(`Contratos: ${contractsResult.error.message}`);
-      if (servicesResult.error) throw new Error(`Serviços: ${servicesResult.error.message}`);
-      if (callsResult.error) throw new Error(`Chamados: ${callsResult.error.message}`);
-      if (teamsResult.error) throw new Error(`Equipes: ${teamsResult.error.message}`);
 
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-      
       const expiringCount = contractsResult.data?.filter(contract => {
+        if (!contract.end_date) return false;
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
         const endDate = new Date(contract.end_date);
         return endDate <= thirtyDaysFromNow;
       }).length || 0;
@@ -40,14 +50,14 @@ export const useDashboardStats = () => {
       const monthlyRevenue = contractsResult.data?.reduce((sum, contract) => sum + (contract.value || 0), 0) || 0;
 
       return {
-        totalClients: clientsResult.count || 0,
+        totalClients: clientsCount,
         activeContracts: contractsResult.count || 0,
-        completedServices: servicesResult.count || 0,
-        pendingCalls: callsResult.count || 0,
+        completedServices: servicesCount,
+        pendingCalls: callsCount,
         expiringContracts: expiringCount,
         monthlyRevenue: monthlyRevenue,
         pendingRenewals: expiringCount,
-        activeTeams: teamsResult.count || 0,
+        activeTeams: teamsCount,
       };
     },
     enabled: !!user,
