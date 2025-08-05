@@ -16,7 +16,10 @@ import { useNavigate } from 'react-router-dom';
 const formSchema = z.object({
   title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres.' }),
   client_id: z.string().uuid({ message: 'Selecione um cliente.' }),
-  team_id: z.string().uuid({ message: 'Selecione uma equipe.' }).optional().or(z.literal('')), 
+  team_id: z.preprocess(
+    (val) => (val === '' || val === 'none' ? null : val),
+    z.string().uuid({ message: 'O ID da equipe deve ser um UUID válido.' }).nullable().optional()
+  ),
   description: z.string().min(5, { message: 'A descrição deve ter pelo menos 5 caracteres.' }),
   status: z.enum(['pending', 'in_progress', 'completed']).optional(), 
   scheduled_date: z.string().refine((date) => !isNaN(Date.parse(date)), { message: 'Data inválida.' }),
@@ -58,21 +61,13 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
 
   const onSubmit = async (values: ServiceCallFormValues) => {
     try {
-      // Garante que o team_id seja nulo se não for selecionado
-      const finalTeamId = (values.team_id === 'none' || !values.team_id) ? null : values.team_id;
-
       if (isEditMode) {
-        const submissionData = {
-          ...values,
-          team_id: finalTeamId,
-        };
-        await updateServiceCall({ id: initialData.id, updates: submissionData as ServiceCall });
+        await updateServiceCall({ id: initialData.id, updates: values as ServiceCall });
         toast({ description: 'Chamado atualizado com sucesso!' });
       } else {
         const submissionData: NewServiceCall = {
           ...values,
           status: 'pending',
-          team_id: finalTeamId,
         };
         await createServiceCall(submissionData);
         toast({ description: 'Chamado criado com sucesso!' });
@@ -157,7 +152,7 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Equipe Responsável</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione uma equipe..." />
