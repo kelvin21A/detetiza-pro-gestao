@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useSupabaseAuth } from '../contexts/SupabaseAuthContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Label } from './ui/label';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function SupabaseLogin() {
@@ -13,15 +12,7 @@ export function SupabaseLogin() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, loading, user } = useSupabaseAuth();
-  const navigate = useNavigate();
-
-  // Redirecionar se já estiver autenticado
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
+  const { signIn, loading } = useSupabaseAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,43 +37,58 @@ export function SupabaseLogin() {
     }
   };
 
-
+  const handleTestLogin = async () => {
+    setEmail('admin@detetizapro.com');
+    setPassword('senhaadmin123');
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await signIn('admin@detetizapro.com', 'senhaadmin123');
+      
+      if (error) {
+        toast.error(`Erro no login de teste: ${error.message}`);
+      }
+    } catch (error) {
+      toast.error('Erro inesperado ao fazer login de teste');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-900">Carregando...</p>
+          <p className="mt-4 text-gray-600">Carregando...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="bg-red-600 p-3 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            <div className="bg-red-600 p-3 rounded-full">
+              <Shield className="h-8 w-8 text-white" />
             </div>
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            ServiceFlow Pro
+            DetetizaPro
           </h2>
-          <p className="mt-2 text-sm text-gray-900">
-            Gestão Completa para Empresas de Serviços de Campo
+          <p className="mt-2 text-sm text-gray-600">
+            Sistema de Gestão para Empresas de Dedetização
           </p>
         </div>
 
-        <Card className="border border-gray-200 shadow-sm">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-gray-900">Acesso ao Sistema</CardTitle>
-            <CardDescription className="text-gray-900">
-              Utilize suas credenciais para acessar a plataforma
+            <CardTitle>Fazer Login</CardTitle>
+            <CardDescription>
+              Entre com suas credenciais para acessar o sistema
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -127,38 +133,51 @@ export function SupabaseLogin() {
                 </div>
               </div>
 
-              <div className="space-y-3 pt-2">
+              <div className="space-y-2">
                 <Button
                   type="submit"
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       Entrando...
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center">
+                    <div className="flex items-center">
                       <LogIn className="h-4 w-4 mr-2" />
-                      Entrar na Plataforma
+                      Entrar
                     </div>
                   )}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleTestLogin}
+                  disabled={isLoading}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Login de Teste (Super Admin)
                 </Button>
               </div>
             </form>
 
-            <div className="mt-6 pt-4 border-t border-gray-100">
-              <p className="text-xs text-gray-900 text-center">
-                Problemas para acessar? Entre em contato com o suporte
+            <div className="mt-6 text-center">
+              <p className="text-xs text-gray-500">
+                Credenciais de teste:<br />
+                <strong>Email:</strong> admin@detetizapro.com<br />
+                <strong>Senha:</strong> senhaadmin123
               </p>
             </div>
           </CardContent>
         </Card>
 
-        <div className="text-center mt-8">
-          <p className="text-xs text-gray-900">
-            © {new Date().getFullYear()} ServiceFlow Pro. Todos os direitos reservados.
+        <div className="text-center">
+          <p className="text-xs text-gray-500">
+            © 2024 DetetizaPro. Todos os direitos reservados.
           </p>
         </div>
       </div>
