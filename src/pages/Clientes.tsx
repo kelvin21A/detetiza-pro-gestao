@@ -3,13 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Eye, Search, Filter, Edit, Trash, Plus } from "lucide-react";
+import { MessageCircle, Eye, Search, Filter, Edit, Trash, Plus, WhatsAppIcon } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useClients, Client } from "@/hooks/useClients";
 import { useWhatsApp } from "@/utils/whatsapp";
 import { Loader2 } from "lucide-react";
-import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon';
 
 export default function Clientes() {
   const { toast } = useToast();
@@ -138,7 +137,10 @@ export default function Clientes() {
                       onClick={() => handleWhatsAppClick(client)}
                       title="Enviar mensagem WhatsApp"
                     >
-                      <WhatsAppIcon className="h-5 w-5" />
+                      <Button size="sm" className="w-full justify-start bg-green-500 hover:bg-green-600 text-white">
+                        <WhatsAppIcon className="mr-2 h-4 w-4" />
+                        WhatsApp
+                      </Button>
                     </Button>
                     <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" asChild>
                       <Link to={`/clientes/${client.id}/editar`} title="Editar Cliente">
