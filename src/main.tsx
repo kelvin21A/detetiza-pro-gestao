@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import LoadingFallback from './components/LoadingFallback'
 import { FALLBACK_CONFIG } from './config/fallback'
+import { initializeUpdateManager } from './utils/serviceWorkerUtils'
 import './index.css'
 
 // Log app initialization
@@ -9,9 +10,18 @@ if (FALLBACK_CONFIG.DEBUG_MODE && FALLBACK_CONFIG.ENABLE_CONSOLE_LOGS) {
   console.log('🚀 DetetizaPro initializing...', {
     version: FALLBACK_CONFIG.APP_VERSION,
     environment: FALLBACK_CONFIG.APP_ENVIRONMENT,
-    timestamp: new Date().toISOString()
-  })
+    timestamp: new Date().toISOString(),
+    build: process.env.BUILD_TIMESTAMP || 'development'
+  });
+  
+  // Habilita logs detalhados do Service Worker em desenvolvimento
+  if (process.env.NODE_ENV === 'development') {
+    localStorage.setItem('debug', 'sw:*');
+  }
 }
+
+// Inicializa o gerenciamento de atualizações do Service Worker
+initializeUpdateManager();
 
 // Get root element with error handling
 const rootElement = document.getElementById('root')

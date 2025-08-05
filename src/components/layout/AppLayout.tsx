@@ -8,7 +8,7 @@ interface AppLayoutProps {
   title: string;
 }
 
-export function AppLayout({ children, title }: AppLayoutProps) {
+export default function AppLayout({ children, title }: AppLayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
