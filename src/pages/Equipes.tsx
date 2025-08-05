@@ -4,7 +4,7 @@ import { Plus, Search, Users2, Edit, Trash2, AlertTriangle, Loader2 } from 'luci
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AppLayout } from '@/components/layout/AppLayout';
+import AppLayout from '@/components/layout/AppLayout';
 import { useTeams } from '@/hooks/useTeams';
 import {
   AlertDialog,

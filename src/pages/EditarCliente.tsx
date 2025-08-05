@@ -1,5 +1,5 @@
-import { useParams } from 'react-router-dom';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { useParams, useNavigate } from 'react-router-dom';
+import AppLayout from '@/components/layout/AppLayout';
 import { ClientForm } from '@/components/forms/ClientForm';
 import { useClient } from '@/hooks/useClients';
 import { Loader2, AlertTriangle } from 'lucide-react';

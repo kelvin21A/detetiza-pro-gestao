@@ -1,4 +1,4 @@
-import { AppLayout } from '@/components/layout/AppLayout';
+import AppLayout from '@/components/layout/AppLayout';
 import { ClientForm } from '@/components/forms/ClientForm';
 
 export default function NovoCliente() {
