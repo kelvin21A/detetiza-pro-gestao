@@ -134,8 +134,8 @@ export default function Clientes() {
                 <CardFooter className="flex justify-end gap-2 pt-4 border-t">
                   <WhatsAppButton 
                     onClick={() => handleWhatsAppClick(client)}
-                    text=""
-                    className="h-9 w-9 p-2"
+                    text="WhatsApp"
+                    className="h-9 px-3"
                   />
                   <Button variant="ghost" size="icon" asChild>
                     <Link to={`/clientes/${client.id}/editar`}><Edit className="w-4 h-4" /></Link>

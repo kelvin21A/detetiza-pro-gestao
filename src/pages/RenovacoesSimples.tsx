@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
-import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Calendar, 
@@ -232,31 +231,29 @@ export default function RenovacoesSimples() {
   };
 
   return (
-    <AppLayout title="Renovações">
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Contratos a Vencer</h1>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input 
-              placeholder="Buscar cliente..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              disabled={isLoading || isError}
-            />
-          </div>
+    <div className="p-4 sm:p-6 space-y-4">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Contratos a Vencer</h1>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Input 
+            placeholder="Buscar cliente..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            disabled={isLoading || isError}
+          />
         </div>
-
-        <div className="flex gap-2 mb-6">
-          <Button variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => setStatusFilter('all')}>Todos</Button>
-          <Button variant={statusFilter === 'expiring_soon' ? 'default' : 'outline'} onClick={() => setStatusFilter('expiring_soon')}>Vencendo em 30 dias</Button>
-          <Button variant={statusFilter === 'expired' ? 'default' : 'outline'} onClick={() => setStatusFilter('expired')}>Vencidos</Button>
-          <Button variant={statusFilter === 'active' ? 'default' : 'outline'} onClick={() => setStatusFilter('active')}>Ativos</Button>
-        </div>
-
-        {renderContent()}
       </div>
-    </AppLayout>
+
+      <div className="flex gap-2 mb-6">
+        <Button variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => setStatusFilter('all')}>Todos</Button>
+        <Button variant={statusFilter === 'expiring_soon' ? 'default' : 'outline'} onClick={() => setStatusFilter('expiring_soon')}>Vencendo em 30 dias</Button>
+        <Button variant={statusFilter === 'expired' ? 'default' : 'outline'} onClick={() => setStatusFilter('expired')}>Vencidos</Button>
+        <Button variant={statusFilter === 'active' ? 'default' : 'outline'} onClick={() => setStatusFilter('active')}>Ativos</Button>
+      </div>
+
+      {renderContent()}
+    </div>
   );
 }

@@ -1,17 +1,14 @@
-import AppLayout from '@/components/layout/AppLayout';
-import { TeamForm } from '@/components/forms/TeamForm';
+import TeamForm from '@/components/forms/TeamForm';
 
-export default function NovaEquipe() {
+const NovaEquipe = () => {
   return (
-    <AppLayout title="Nova Equipe">
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight text-red-600">Adicionar Nova Equipe</h2>
-        </div>
-        <div className="p-8 bg-white rounded-lg shadow-md">
-            <TeamForm />
-        </div>
+    <div className="p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Nova Equipe</h1>
+        <TeamForm />
       </div>
-    </AppLayout>
+    </div>
   );
-}
+};
+
+export default NovaEquipe;

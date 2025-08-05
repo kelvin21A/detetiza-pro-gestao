@@ -63,7 +63,7 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
     try {
       const submissionData = {
         ...values,
-        team_id: values.team_id || null, // Converte string vazia para null para o Supabase
+        team_id: values.team_id === 'none' ? null : values.team_id || null,
       };
 
       if (isEditMode) {
@@ -160,6 +160,7 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
+                  <SelectItem value="none">Nenhuma</SelectItem>
                   {teams?.map(team => (
                     <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                   ))}
