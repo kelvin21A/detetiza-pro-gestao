@@ -21,12 +21,7 @@ export default function Auth() {
   // Redirecionar se já estiver logado
   useEffect(() => {
     if (user) {
-      // Se for super admin, redirecionar para painel super admin
-      if (user.is_super_admin || user.role === 'super_admin') {
-        navigate('/super-admin');
-      } else {
-        navigate('/');
-      }
+      navigate('/');
     }
   }, [user, navigate]);
 

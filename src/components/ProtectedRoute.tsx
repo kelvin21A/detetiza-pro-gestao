@@ -5,9 +5,10 @@ import AppLayout from './layout/AppLayout';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  title?: string;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, title }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
 
   if (loading) {

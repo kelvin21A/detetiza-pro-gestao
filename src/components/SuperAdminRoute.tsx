@@ -7,7 +7,7 @@ interface SuperAdminRouteProps {
 }
 
 const SuperAdminRoute: React.FC<SuperAdminRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -21,7 +21,7 @@ const SuperAdminRoute: React.FC<SuperAdminRouteProps> = ({ children }) => {
   }
 
   // Verificar se é super admin
-  const isSuperAdmin = user?.is_super_admin === true || user?.role === 'super_admin';
+  const isSuperAdmin = profile?.is_super_admin === true || profile?.role === 'super_admin';
 
   if (!user || !isSuperAdmin) {
     return <Navigate to="/login" replace />;

@@ -8,9 +8,12 @@ export type Profile = Tables<'profiles'>;
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
+  userProfile: Profile | null;
+  session: any;
   loading: boolean;
   organizationId: string | null;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,12 +87,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
   const value = useMemo(() => ({
     user,
     profile,
+    userProfile: profile,
+    session: null,
     loading,
     organizationId: profile?.organization_id || null,
     signIn,
+    signOut,
   }), [user, profile, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
