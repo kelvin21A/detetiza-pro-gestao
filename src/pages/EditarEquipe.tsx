@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import TeamForm from '@/components/forms/TeamForm';
-import { useTeam } from '@/hooks/useTeam';
+import { useTeam } from '@/hooks/useTeams';
 import { Loader2 } from 'lucide-react';
 
 const EditarEquipe = () => {
