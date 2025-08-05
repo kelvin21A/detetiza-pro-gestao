@@ -1,211 +1,186 @@
-import { AppLayout } from "@/components/layout/AppLayout";
+import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Eye, Search, Filter, Plus, Edit, Trash } from "lucide-react";
-import { useState } from "react";
+import { MessageCircle, Eye, Search, Filter, Edit, Trash, Plus } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useClients } from "@/hooks/useClients";
+import { useClients, Client } from "@/hooks/useClients";
 import { useWhatsApp } from "@/utils/whatsapp";
-import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function Clientes() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("todos");
-  const { clients, loading, deleteClient } = useClients();
+  const { toast } = useToast();
+  const { clients, isLoading, isError, deleteClient } = useClients();
   const { sendWhatsAppMessage, isValidPhone } = useWhatsApp();
 
-  const handleWhatsAppClick = (client: any) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('todos');
+
+  const filteredClients = useMemo(() => {
+    if (!clients) return [];
+
+    let updatedClients = clients;
+
+    if (statusFilter !== 'todos') {
+      updatedClients = updatedClients.filter(client => client.status === statusFilter);
+    }
+
+    if (searchTerm) {
+      updatedClients = updatedClients.filter(client =>
+        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (client.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (client.phone || '').includes(searchTerm)
+      );
+    }
+
+    return updatedClients;
+  }, [clients, searchTerm, statusFilter]);
+
+  const handleWhatsAppClick = (client: Client) => {
     if (!client.phone) {
-      toast.error('Cliente não possui telefone cadastrado');
+      toast({ description: 'Cliente não possui telefone cadastrado' });
       return;
     }
 
     if (!isValidPhone(client.phone)) {
-      toast.error('Número de telefone inválido');
+      toast({ title: 'Atenção', description: 'O número de WhatsApp do cliente não é válido.' });
       return;
     }
 
-    sendWhatsAppMessage({
-      phone: client.phone,
-      clientName: client.name,
-      message: `Olá ${client.name}, gostaria de falar sobre seus serviços de dedetização.`
-    });
-
-    toast.success('WhatsApp aberto com sucesso!');
+    sendWhatsAppMessage(client.phone, `Olá, ${client.name}!`);
+    toast({ title: 'Sucesso', description: 'Mensagem enviada para o WhatsApp.' });
   };
-
-  const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (client.phone || '').includes(searchTerm) ||
-                         (client.address || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === "todos" || client.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "em-dia":
-        return <Badge variant="default" className="bg-primary text-primary-foreground">Em Dia</Badge>;
-      case "proximo-vencimento":
-        return <Badge variant="secondary" className="bg-yellow-500 text-white">Próximo</Badge>;
+        return <Badge variant="default">Em dia</Badge>;
+      case "a-vencer":
+        return <Badge variant="secondary">A vencer</Badge>;
       case "vencido":
         return <Badge variant="destructive">Vencido</Badge>;
       default:
-        return <Badge variant="outline">Ativo</Badge>;
+        return <Badge>{status}</Badge>;
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
+    if (window.confirm("Tem certeza que deseja excluir este cliente?")) {
       await deleteClient(id);
     }
   };
 
+  const statusFilters = ['todos', 'em-dia', 'a-vencer', 'vencido'];
+
   return (
-    <AppLayout title="Clientes">
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar clientes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Button
-              variant={statusFilter === "todos" ? "default" : "outline"}
-              onClick={() => setStatusFilter("todos")}
-            >
-              Todos
-            </Button>
-            <Button
-              variant={statusFilter === "em-dia" ? "default" : "outline"}
-              onClick={() => setStatusFilter("em-dia")}
-            >
-              Em Dia
-            </Button>
-            <Button
-              variant={statusFilter === "proximo-vencimento" ? "default" : "outline"}
-              onClick={() => setStatusFilter("proximo-vencimento")}
-            >
-              Próximos
-            </Button>
-            <Button
-              variant={statusFilter === "vencido" ? "default" : "outline"}
-              onClick={() => setStatusFilter("vencido")}
-            >
-              Vencidos
-            </Button>
-          </div>
+    <div className="p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Clientes</h1>
+        <Button asChild>
+          <Link to="/clientes/novo"><Plus className="mr-2 h-4 w-4" /> Novo Cliente</Link>
+        </Button>
+      </div>
 
-          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link to="/clientes/novo">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Cliente
-            </Link>
-          </Button>
+      <div className="flex flex-col sm:flex-row gap-4 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, e-mail ou telefone..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Filter className="w-5 h-5 text-muted-foreground" />
+          {statusFilters.map(status => (
+            <Button
+              key={status}
+              variant={statusFilter === status ? "secondary" : "ghost"}
+              onClick={() => setStatusFilter(status)}
+              className="capitalize"
+            >
+              {status.replace('-', ' ')}
+            </Button>
+          ))}
+        </div>
+      </div>
 
-        {loading ? (
+      <div className="space-y-4">
+        {isLoading ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">Carregando clientes...</p>
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+            <p className="text-muted-foreground mt-2">Carregando clientes...</p>
           </div>
-        ) : (
-          <div className="grid gap-4">
-            {filteredClients.map((client) => (
-              <Card key={client.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-foreground">{client.name}</h3>
-                        {getStatusBadge(client.status)}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                        {client.phone && (
-                          <div>
-                            <span className="font-medium">Telefone:</span> {client.phone}
-                          </div>
-                        )}
-                        {client.last_service_date && (
-                          <div>
-                            <span className="font-medium">Último Serviço:</span> {new Date(client.last_service_date).toLocaleDateString('pt-BR')}
-                          </div>
-                        )}
-                        {client.next_renewal_date && (
-                          <div>
-                            <span className="font-medium">Próxima Renovação:</span>{" "}
-                            <span className={client.status !== "em-dia" ? "text-destructive font-medium" : ""}>
-                              {new Date(client.next_renewal_date).toLocaleDateString('pt-BR')}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      {client.address && (
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          <span className="font-medium">Endereço:</span> {client.address}
-                        </div>
-                      )}
-                      {client.email && (
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          <span className="font-medium">Email:</span> {client.email}
-                        </div>
-                      )}
+        ) : isError ? (
+          <div className="text-center py-8">
+            <p className="text-red-500 font-medium">Erro ao carregar os clientes.</p>
+            <p className="text-muted-foreground text-sm">Tente recarregar a página.</p>
+          </div>
+        ) : filteredClients.length > 0 ? (
+          filteredClients.map((client) => (
+            <Card key={client.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-semibold text-lg text-foreground">{client.name}</h3>
+                      {getStatusBadge(client.status)}
                     </div>
-                    
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                        onClick={() => handleWhatsAppClick(client)}
-                        title="Enviar mensagem WhatsApp"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" asChild>
-                        <Link to={`/clientes/${client.id}/editar`}>
-                          <Edit className="w-4 h-4" />
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleDelete(client.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash className="w-4 h-4" />
-                      </Button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      {client.phone && <div><strong>Telefone:</strong> {client.phone}</div>}
+                      {client.email && <div><strong>Email:</strong> {client.email}</div>}
+                      {client.address && <div className="col-span-full"><strong>Endereço:</strong> {client.address}</div>}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {!loading && filteredClients.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== "todos" 
-                ? "Nenhum cliente encontrado com os filtros aplicados." 
-                : "Nenhum cliente cadastrado. Clique em 'Novo Cliente' para começar."
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      onClick={() => handleWhatsAppClick(client)}
+                      title="Enviar mensagem WhatsApp"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" asChild>
+                      <Link to={`/clientes/${client.id}/editar`} title="Editar Cliente">
+                        <Edit className="w-5 h-5" />
+                      </Link>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" asChild>
+                      <Link to={`/clientes/${client.id}/editar`} title="Ver Detalhes">
+                        <Eye className="w-5 h-5" />
+                      </Link>
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleDelete(client.id)}
+                      className="text-destructive hover:text-destructive hover:bg-red-50"
+                      title="Excluir Cliente"
+                    >
+                      <Trash className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-medium">Nenhum cliente encontrado</h3>
+            <p className="text-muted-foreground mt-1">
+              {searchTerm || statusFilter !== 'todos' 
+                ? "Tente ajustar sua busca ou filtros."
+                : "Clique em 'Novo Cliente' para começar a cadastrar."
               }
             </p>
           </div>
         )}
       </div>
-    </AppLayout>
+    </div>
   );
 }

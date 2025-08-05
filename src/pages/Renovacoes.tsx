@@ -18,7 +18,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { MOCK_CLIENTS } from "@/data/mockData";
 
@@ -187,188 +187,134 @@ export default function Renovacoes() {
     if (status === 'expired') {
       message = `Olá ${contract.client.name}! Seu contrato de dedetização venceu há ${Math.abs(daysLeft)} dias. Gostaria de renovar seus serviços? Entre em contato conosco para não ficar desprotegido!`;
     } else if (status === 'expiring_soon') {
-      message = `Olá ${contract.client.name}! Seu contrato de dedetização vence em ${daysLeft} dias (${new Date(contract.end_date).toLocaleDateString('pt-BR')}). Gostaria de renovar seus serviços?`;
-    } else {
-      message = `Olá ${contract.client.name}! Entrando em contato sobre seu contrato de dedetização. Como podemos ajudá-lo?`;
     }
-    
-    const phoneNumber = contract.client.phone.replace(/\D/g, '');
-    const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
-
-  const handleRenewalProcess = async (contractId: string) => {
-    try {
-      setProcessingRenewal(contractId);
-      
-      // Aqui você implementaria a lógica de renovação
-      // Por exemplo: criar novo contrato, atualizar status, etc.
-      
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simular processamento
-      
-      toast.success('Processo de renovação iniciado com sucesso!');
-      toast.info('Um novo contrato será criado automaticamente.');
-      
-      // Recarregar dados
-      await loadContracts();
-      
-    } catch (error) {
-      console.error('Erro ao processar renovação:', error);
-      toast.error('Erro ao processar renovação');
-    } finally {
-      setProcessingRenewal(null);
+    if (!isValidPhone(contract.clients.phone)) {
+      toast({ title: 'Atenção', description: 'O número de WhatsApp do cliente não é válido.', variant: 'destructive' });
+      return;
     }
+    sendWhatsAppMessage(contract.clients.phone, `Olá, ${contract.clients.name}! Seu contrato está próximo do vencimento.`);
+    toast({ title: 'Sucesso', description: 'Mensagem enviada para o WhatsApp.' });
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const handleRenew = async (contractId: string) => {
+    setProcessingId(contractId);
+    await renewContract(contractId, {
+      onSuccess: () => {
+        toast({ title: 'Sucesso', description: 'Contrato renovado com sucesso!' });
+      },
+      onError: (err) => {
+        toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+      },
+      onSettled: () => {
+        setProcessingId(null);
+      }
+    });
   };
 
-  if (loading) {
-    return (
-      <AppLayout title="Renovações">
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-red-600" />
-          <span className="ml-2 text-gray-600">Carregando renovações...</span>
-        </div>
-      </AppLayout>
-    );
-  }
+  const statusFilters = ['todos', 'active', 'expired', 'renewed'];
 
   return (
-    <AppLayout title="CRM - Renovações">
-      {/* Header com Estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <Card className="border-red-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Contratos Vencidos</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {contracts.filter(c => getContractStatus(c.end_date) === 'expired').length}
-                </p>
+    <AppLayout title="Gestão de Renovações">
+      <div className="p-4 sm:p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Contratos e Renovações</CardTitle>
+            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por cliente ou e-mail..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-yellow-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Vencendo em 30 dias</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {contracts.filter(c => getContractStatus(c.end_date) === 'expiring_soon').length}
-                </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Filter className="w-5 h-5 text-muted-foreground" />
+                {statusFilters.map(status => (
+                  <Button
+                    key={status}
+                    variant={statusFilter === status ? "secondary" : "ghost"}
+                    onClick={() => setStatusFilter(status)}
+                    className="capitalize"
+                  >
+                    {status.replace('-', ' ')}
+                  </Button>
+                ))}
               </div>
-              <Clock className="h-8 w-8 text-yellow-600" />
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-green-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Contratos Ativos</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {contracts.filter(c => getContractStatus(c.end_date) === 'active').length}
-                </p>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                <p className="text-muted-foreground mt-2">Carregando contratos...</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
+            ) : isError ? (
+              <div className="text-center py-8 text-red-500 bg-red-50 p-4 rounded-md">
+                <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+                <p className="font-semibold">Erro ao carregar os contratos.</p>
+                <p className="text-sm text-red-400">{(error as Error)?.message || 'Tente recarregar a página.'}</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="text-center">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredContracts.length > 0 ? (
+                    filteredContracts.map((contract) => (
+                      <TableRow key={contract.id}>
+                        <TableCell>
+                          <div className="font-medium">{contract.clients.name}</div>
+                          <div className="text-sm text-muted-foreground">{contract.clients.email || 'N/A'}</div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(contract.status)}</TableCell>
+                        <TableCell>{new Date(contract.end_date).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(contract.value)}</TableCell>
+                        <TableCell className="text-center space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => handleWhatsAppClick(contract)}>
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Contatar
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleRenew(contract.id)}
+                            disabled={processingId === contract.id || contract.status !== 'active'}
+                          >
+                            {processingId === contract.id ?
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" /> :
+                              <CalendarCheck className="w-4 h-4 mr-2" />
+                            }
+                            Renovar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center h-24">
+                        Nenhum contrato encontrado para os filtros selecionados.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
+          <CardFooter>
+            <div className="text-xs text-muted-foreground">
+              Mostrando <strong>{filteredContracts.length} de {contracts?.length || 0}</strong> contratos.
+            </div>
+          </CardFooter>
         </Card>
       </div>
-
-      {/* Filtros e Busca */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Buscar por cliente, email ou telefone..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-gray-300 focus:border-red-500 focus:ring-red-500"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={statusFilter === "all" ? "default" : "outline"}
-            onClick={() => setStatusFilter("all")}
-            className={statusFilter === "all" ? "bg-red-600 hover:bg-red-700" : ""}
-          >
-            Todos ({contracts.length})
-          </Button>
-          <Button
-            variant={statusFilter === "expired" ? "default" : "outline"}
-            onClick={() => setStatusFilter("expired")}
-            className={statusFilter === "expired" ? "bg-red-600 hover:bg-red-700" : ""}
-          >
-            Vencidos
-          </Button>
-          <Button
-            variant={statusFilter === "expiring_soon" ? "default" : "outline"}
-            onClick={() => setStatusFilter("expiring_soon")}
-            className={statusFilter === "expiring_soon" ? "bg-red-600 hover:bg-red-700" : ""}
-          >
-            Próximos
-          </Button>
-          <Button
-            variant={statusFilter === "active" ? "default" : "outline"}
-            onClick={() => setStatusFilter("active")}
-            className={statusFilter === "active" ? "bg-red-600 hover:bg-red-700" : ""}
-          >
-            Ativos
-          </Button>
-        </div>
-      </div>
-
-      {/* Lista de Contratos */}
-      <div className="grid gap-4">
-        {filteredContracts.map((contract) => {
-          const status = getContractStatus(contract.end_date);
-          const daysLeft = getDaysUntilExpiration(contract.end_date);
-          
-          return (
-            <Card 
-              key={contract.id} 
-              className={`border-l-4 ${
-                status === 'expired' ? 'border-l-red-500 bg-red-50' :
-                status === 'expiring_soon' ? 'border-l-yellow-500 bg-yellow-50' :
-                'border-l-green-500'
-              }`}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg text-black">{contract.client.name}</CardTitle>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                      <div className="flex items-center">
-                        <Mail className="h-4 w-4 mr-1" />
-                        {contract.client.email}
-                      </div>
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 mr-1" />
-                        {contract.client.phone}
-                      </div>
-                    </div>
-                  </div>
-                  {getStatusBadge(contract.end_date)}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                  <div className="flex items-center text-sm">
-                    <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                    <div>
-                      <span className="text-gray-600">Vencimento:</span>
-                      <br />
-                      <strong>{new Date(contract.end_date).toLocaleDateString('pt-BR')}</strong>
                     </div>
                   <div className="flex gap-2">
                     <Button 

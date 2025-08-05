@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,56 +13,20 @@ import {
   MessageCircle,
   Phone,
   Mail,
-  DollarSign
+  DollarSign,
+  Loader2
 } from "lucide-react";
+import { useContracts, Contract } from '@/hooks/useContracts';
 import { toast } from 'sonner';
-
-// Dados mockados para demonstração
-const mockContracts = [
-  {
-    id: '1',
-    client: {
-      name: 'Restaurante Bom Sabor',
-      email: 'contato@bomsabor.com',
-      phone: '(11) 99999-1111',
-      address: 'Rua das Flores, 123'
-    },
-    end_date: '2024-02-15',
-    value: 850.00,
-    status: 'active'
-  },
-  {
-    id: '2',
-    client: {
-      name: 'Padaria Central',
-      email: 'admin@padariacentral.com',
-      phone: '(11) 99999-2222',
-      address: 'Av. Principal, 456'
-    },
-    end_date: '2024-01-28',
-    value: 650.00,
-    status: 'active'
-  },
-  {
-    id: '3',
-    client: {
-      name: 'Hotel Vista Mar',
-      email: 'gerencia@hotelvistamar.com',
-      phone: '(11) 99999-3333',
-      address: 'Rua da Praia, 789'
-    },
-    end_date: '2024-03-10',
-    value: 1200.00,
-    status: 'active'
-  }
-];
 
 export default function RenovacoesSimples() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { contracts, isLoading, isError, updateContract } = useContracts();
 
   const getDaysUntilExpiration = (endDate: string): number => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const expiration = new Date(endDate);
     const diffTime = expiration.getTime() - today.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -75,21 +39,22 @@ export default function RenovacoesSimples() {
     return 'active';
   };
 
-  const filteredContracts = mockContracts.filter(contract => {
-    const matchesSearch = 
-      contract.client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contract.client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contract.client.phone.includes(searchTerm);
-    
-    if (statusFilter === "all") return matchesSearch;
-    
-    const contractStatus = getContractStatus(contract.end_date);
-    if (statusFilter === "expired" && contractStatus === 'expired') return matchesSearch;
-    if (statusFilter === "expiring_soon" && contractStatus === 'expiring_soon') return matchesSearch;
-    if (statusFilter === "active" && contractStatus === 'active') return matchesSearch;
-    
-    return false;
-  });
+  const filteredContracts = useMemo(() => {
+    if (!contracts) return [];
+    return contracts.filter(contract => {
+      const client = contract.clients;
+      const matchesSearch = client ? 
+        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (client.phone && client.phone.includes(searchTerm))
+        : false;
+      
+      if (statusFilter === "all") return matchesSearch;
+      
+      const contractStatus = getContractStatus(contract.end_date);
+      return statusFilter === contractStatus && matchesSearch;
+    });
+  }, [contracts, searchTerm, statusFilter]);
 
   const getStatusBadge = (endDate: string) => {
     const status = getContractStatus(endDate);
@@ -98,21 +63,21 @@ export default function RenovacoesSimples() {
     switch (status) {
       case "expired":
         return (
-          <Badge className="bg-red-100 text-red-800 border-red-200">
+          <Badge variant="destructive">
             <AlertTriangle className="w-3 h-3 mr-1" />
             Vencido ({Math.abs(daysLeft)} dias)
           </Badge>
         );
       case "expiring_soon":
         return (
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+          <Badge className="bg-yellow-400 text-black hover:bg-yellow-500">
             <Clock className="w-3 h-3 mr-1" />
             Vence em {daysLeft} dias
           </Badge>
         );
-      case "active":
+      default:
         return (
-          <Badge className="bg-green-100 text-green-800 border-green-200">
+          <Badge variant="default">
             <CheckCircle className="w-3 h-3 mr-1" />
             Ativo ({daysLeft} dias)
           </Badge>
@@ -120,154 +85,90 @@ export default function RenovacoesSimples() {
     }
   };
 
-  const handleWhatsAppContact = (contract: any) => {
+  const handleWhatsAppContact = (contract: Contract) => {
+    if (!contract.clients) return;
     const daysLeft = getDaysUntilExpiration(contract.end_date);
     const status = getContractStatus(contract.end_date);
     
     let message = '';
     if (status === 'expired') {
-      message = `Olá ${contract.client.name}! Seu contrato de dedetização venceu há ${Math.abs(daysLeft)} dias. Gostaria de renovar seus serviços? Entre em contato conosco para não ficar desprotegido!`;
-    } else if (status === 'expiring_soon') {
-      message = `Olá ${contract.client.name}! Seu contrato de dedetização vence em ${daysLeft} dias (${new Date(contract.end_date).toLocaleDateString('pt-BR')}). Gostaria de renovar seus serviços?`;
+      message = `Olá ${contract.clients.name}! Seu contrato conosco venceu há ${Math.abs(daysLeft)} dias. Gostaria de renovar para continuar protegido?`;
     } else {
-      message = `Olá ${contract.client.name}! Entrando em contato sobre seu contrato de dedetização. Como podemos ajudá-lo?`;
+      message = `Olá ${contract.clients.name}, tudo bem? Seu contrato está prestes a vencer em ${daysLeft} dias. Vamos conversar sobre a renovação?`;
     }
-    
-    const phoneNumber = contract.client.phone.replace(/\D/g, '');
-    const whatsappUrl = `https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`;
+
+    const phone = contract.clients.phone?.replace(/\D/g, '') || '';
+    const whatsappUrl = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
-    toast.success('WhatsApp aberto com sucesso!');
   };
 
-  const handleRenewalProcess = (contractId: string) => {
-    toast.success('Processo de renovação iniciado!');
-    toast.info('Um novo contrato será criado automaticamente.');
+  const handleRenewalProcess = async (contractId: string) => {
+    const newEndDate = new Date();
+    newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+    
+    await updateContract({
+      id: contractId,
+      updates: { end_date: newEndDate.toISOString().split('T')[0] }
+    });
   };
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | null) => {
+    if (value === null || value === undefined) return 'N/A';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
+      currency: 'BRL',
     }).format(value);
   };
 
-  return (
-    <AppLayout title="CRM - Renovações">
-      {/* Header com Estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <Card className="border-red-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Contratos Vencidos</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {mockContracts.filter(c => getContractStatus(c.end_date) === 'expired').length}
-                </p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-yellow-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Vencendo em 30 dias</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {mockContracts.filter(c => getContractStatus(c.end_date) === 'expiring_soon').length}
-                </p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-green-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Contratos Ativos</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {mockContracts.filter(c => getContractStatus(c.end_date) === 'active').length}
-                </p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtros e Busca */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Buscar por cliente, email ou telefone..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-gray-300 focus:border-red-500 focus:ring-red-500"
-          />
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="w-12 h-12 text-red-600 animate-spin" />
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant={statusFilter === "all" ? "default" : "outline"}
-            onClick={() => setStatusFilter("all")}
-            className={statusFilter === "all" ? "bg-red-600 hover:bg-red-700" : ""}
-          >
-            Todos ({mockContracts.length})
-          </Button>
-          <Button
-            variant={statusFilter === "expired" ? "default" : "outline"}
-            onClick={() => setStatusFilter("expired")}
-            className={statusFilter === "expired" ? "bg-red-600 hover:bg-red-700" : ""}
-          >
-            Vencidos
-          </Button>
-          <Button
-            variant={statusFilter === "expiring_soon" ? "default" : "outline"}
-            onClick={() => setStatusFilter("expiring_soon")}
-            className={statusFilter === "expiring_soon" ? "bg-red-600 hover:bg-red-700" : ""}
-          >
-            Próximos
-          </Button>
-          <Button
-            variant={statusFilter === "active" ? "default" : "outline"}
-            onClick={() => setStatusFilter("active")}
-            className={statusFilter === "active" ? "bg-red-600 hover:bg-red-700" : ""}
-          >
-            Ativos
-          </Button>
-        </div>
-      </div>
+      );
+    }
 
-      {/* Lista de Contratos */}
-      <div className="grid gap-4">
-        {filteredContracts.map((contract) => {
-          const status = getContractStatus(contract.end_date);
+    if (isError) {
+      return (
+        <div className="text-center py-12 bg-red-50 p-6 rounded-lg">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-red-800 mb-2">Erro ao carregar contratos</h3>
+          <p className="text-red-700">Não foi possível buscar os dados. Tente novamente mais tarde.</p>
+        </div>
+      );
+    }
+
+    if (filteredContracts.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">Nenhum contrato encontrado</h3>
+          <p className="text-muted-foreground">
+            {searchTerm || statusFilter !== 'all' ? 'Tente ajustar sua busca ou filtros.' : 'Nenhum contrato cadastrado ainda.'}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {filteredContracts.map(contract => {
           const daysLeft = getDaysUntilExpiration(contract.end_date);
-          
           return (
-            <Card 
-              key={contract.id} 
-              className={`border-l-4 ${
-                status === 'expired' ? 'border-l-red-500 bg-red-50' :
-                status === 'expiring_soon' ? 'border-l-yellow-500 bg-yellow-50' :
-                'border-l-green-500'
-              }`}
-            >
-              <CardHeader className="pb-3">
+            <Card key={contract.id} className="shadow-sm hover:shadow-lg transition-shadow">
+              <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-lg text-black">{contract.client.name}</CardTitle>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                    <CardTitle className="text-lg text-black">{contract.clients?.name || 'Cliente não encontrado'}</CardTitle>
+                    <div className="flex flex-col gap-1 mt-2 text-sm text-gray-600">
                       <div className="flex items-center">
                         <Mail className="h-4 w-4 mr-1" />
-                        {contract.client.email}
+                        {contract.clients?.email || 'N/A'}
                       </div>
                       <div className="flex items-center">
                         <Phone className="h-4 w-4 mr-1" />
-                        {contract.client.phone}
+                        {contract.clients?.phone || 'N/A'}
                       </div>
                     </div>
                   </div>
@@ -309,6 +210,7 @@ export default function RenovacoesSimples() {
                     size="sm"
                     onClick={() => handleWhatsAppContact(contract)}
                     className="bg-green-600 hover:bg-green-700 text-white"
+                    disabled={!contract.clients?.phone}
                   >
                     <MessageCircle className="h-4 w-4 mr-1" />
                     WhatsApp
@@ -320,15 +222,7 @@ export default function RenovacoesSimples() {
                     className="bg-red-600 hover:bg-red-700 text-white"
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    Iniciar Renovação
-                  </Button>
-                  
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => toast.info('Funcionalidade em desenvolvimento')}
-                  >
-                    Ver Cliente
+                    Renovar por 1 Ano
                   </Button>
                 </div>
               </CardContent>
@@ -336,22 +230,35 @@ export default function RenovacoesSimples() {
           );
         })}
       </div>
+    );
+  };
 
-      {filteredContracts.length === 0 && (
-        <div className="text-center py-12">
-          <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum contrato encontrado</h3>
-          <p className="text-gray-500 mb-4">
-            {searchTerm ? 'Tente ajustar o termo de busca.' : 'Não há contratos para renovação no momento.'}
-          </p>
-          <Button 
-            onClick={() => window.location.href = '/clientes'}
-            className="bg-red-600 hover:bg-red-700 text-white"
-          >
-            Ver Clientes
-          </Button>
+  return (
+    <AppLayout title="Renovações">
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Contratos a Vencer</h1>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Input 
+              placeholder="Buscar cliente..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              disabled={isLoading || isError}
+            />
+          </div>
         </div>
-      )}
+
+        <div className="flex gap-2 mb-6">
+          <Button variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => setStatusFilter('all')}>Todos</Button>
+          <Button variant={statusFilter === 'expiring_soon' ? 'default' : 'outline'} onClick={() => setStatusFilter('expiring_soon')}>Vencendo em 30 dias</Button>
+          <Button variant={statusFilter === 'expired' ? 'default' : 'outline'} onClick={() => setStatusFilter('expired')}>Vencidos</Button>
+          <Button variant={statusFilter === 'active' ? 'default' : 'outline'} onClick={() => setStatusFilter('active')}>Ativos</Button>
+        </div>
+
+        {renderContent()}
+      </div>
     </AppLayout>
   );
 }

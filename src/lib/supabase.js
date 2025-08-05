@@ -1,35 +1,37 @@
 import { createClient } from '@supabase/supabase-js'
-import { FALLBACK_CONFIG, isValidConfig } from '../config/fallback'
+// Leitura das variáveis de ambiente do Vite
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Supabase configuration with fallback
-const supabaseUrl = FALLBACK_CONFIG.SUPABASE_URL
-const supabaseAnonKey = FALLBACK_CONFIG.SUPABASE_ANON_KEY
+// Validação das variáveis de ambiente
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Erro de Configuração: As variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não foram definidas no arquivo .env');
+}
 
-// Log configuration status in development
-if (FALLBACK_CONFIG.DEBUG_MODE && FALLBACK_CONFIG.ENABLE_CONSOLE_LOGS) {
-  console.log('🔗 Supabase Configuration:', {
-    url: supabaseUrl,
-    hasValidConfig: isValidConfig(),
-    environment: FALLBACK_CONFIG.APP_ENVIRONMENT
-  })
+// Log para depuração em ambiente de desenvolvimento
+if (import.meta.env.DEV) {
+  console.log('🔗 Configuração do Supabase:', {
+    url: supabaseUrl ? 'URL definida' : 'URL não definida',
+    key: supabaseAnonKey ? 'Chave definida' : 'Chave não definida',
+  });
 }
 
 // Create Supabase client with error handling
 let supabase
 try {
-  supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      debug: FALLBACK_CONFIG.DEBUG_MODE
-    },
-    global: {
-      headers: {
-        'X-Client-Info': `${FALLBACK_CONFIG.APP_NAME}@${FALLBACK_CONFIG.APP_VERSION}`
-      }
-    }
-  })
+  // Só tenta criar o cliente se as variáveis existirem
+  if (supabaseUrl && supabaseAnonKey) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    });
+  } else {
+    // Lança um erro se as chaves não estiverem presentes
+    throw new Error('Credenciais do Supabase não encontradas.');
+  }
 } catch (error) {
   console.error('❌ Failed to initialize Supabase client:', error)
   // Create a mock client to prevent app crashes

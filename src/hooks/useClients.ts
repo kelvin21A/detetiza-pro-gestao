@@ -1,233 +1,181 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase.js';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { MOCK_CLIENTS, Client } from '@/data/mockData';
+import { Database } from '../types/database.types';
 
-// Client interface is now imported from mockData.ts
+// Define o tipo Client baseado nos tipos gerados pelo Supabase
+type Client = Database['public']['Tables']['clients']['Row'];
 
-// Mock data is now centralized in mockData.ts
+// Re-exporta o tipo Client para ser usado em outras partes da aplicação
+export type { Client };
 
-export function useClients() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+// Função auxiliar para obter o organization_id do usuário logado
+const getOrganizationId = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não autenticado.');
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single();
+
+  if (error || !profile?.organization_id) {
+    throw new Error('Organização não encontrada para este usuário.');
+  }
+
+  return profile.organization_id;
+};
+
+// Hook para buscar um único cliente pelo ID
+export function useClient(id: string | undefined) {
   const { user } = useAuth();
 
-  // Check if we're in test mode
-  const isTestMode = user?.id === 'test-user-id' || localStorage.getItem('detetizapro_test_user');
+  const { data: client, isLoading, isError } = useQuery<Client | null>({
+    queryKey: ['client', id],
+    queryFn: async () => {
+      if (!id) return null;
+      const organizationId = await getOrganizationId();
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', id)
+        .eq('organization_id', organizationId)
+        .single();
 
-  const fetchClients = async () => {
-    try {
-      setLoading(true);
+      if (error) {
+        // Não lançar erro se o cliente simplesmente não for encontrado
+        if (error.code === 'PGRST116') {
+          console.warn(`Cliente com id ${id} não encontrado.`);
+          return null;
+        }
+        throw new Error(error.message);
+      }
+      return data;
+    },
+    enabled: !!user && !!id, // A query só é executada se o usuário e o ID existirem
+  });
+
+  return { client, isLoading, isError };
+}
+
+export function useClients() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { user } = useAuth(); // Usado para reativar a query no login/logout
+
+  // Query para buscar todos os clientes da organização
+  const { data: clients, isLoading, isError } = useQuery<Client[]>({
+    queryKey: ['clients', user?.id],
+    queryFn: async () => {
+      const organizationId = await getOrganizationId();
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw new Error(error.message);
+      return data || [];
+    },
+    enabled: !!user, // A query só é executada se o usuário estiver logado
+  });
+
+  // Mutation para criar um novo cliente
+  const { mutateAsync: createClient } = useMutation({
+    mutationFn: async (clientData: Omit<Client, 'id' | 'created_at' | 'organization_id'>) => {
+      const organizationId = await getOrganizationId();
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([{ ...clientData, organization_id: organizationId }])
+        .select()
+        .single();
       
-      if (isTestMode) {
-        // Use mock data for test mode
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
-        const savedClients = localStorage.getItem('detetizapro_test_clients');
-        if (savedClients) {
-          setClients(JSON.parse(savedClients));
-        } else {
-          setClients(MOCK_CLIENTS);
-          localStorage.setItem('detetizapro_test_clients', JSON.stringify(MOCK_CLIENTS));
-        }
-      } else {
-        // Use real Supabase data
-        const { data, error } = await supabase
-          .from('clients')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setClients(data || []);
-      }
-    } catch (error: any) {
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (newClient) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({
-        title: 'Erro ao carregar clientes',
-        description: error.message,
-        variant: 'destructive'
+        title: 'Cliente criado com sucesso!',
+        description: `Cliente ${newClient.name} foi adicionado.`,
       });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createClient = async (client: Omit<Partial<Client>, 'id' | 'created_at' | 'updated_at'> & { name: string }) => {
-    try {
-      if (isTestMode) {
-        // Mock client creation
-        await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API delay
-        
-        const newClient: Client = {
-          ...client,
-          id: Date.now().toString(),
-          organization_id: 'test-org-id',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          status: client.status || 'em-dia'
-        };
-        
-        const savedClients = localStorage.getItem('detetizapro_test_clients');
-        const currentClients = savedClients ? JSON.parse(savedClients) : MOCK_CLIENTS;
-        const updatedClients = [newClient, ...currentClients];
-        
-        localStorage.setItem('detetizapro_test_clients', JSON.stringify(updatedClients));
-        setClients(updatedClients);
-        
-        toast({
-          title: 'Cliente criado com sucesso!',
-          description: `Cliente ${client.name} foi adicionado`
-        });
-        
-        return { data: newClient, error: null };
-      } else {
-        // Real Supabase creation
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-          .single();
-
-        if (!profile?.organization_id) {
-          throw new Error('Organização não encontrada');
-        }
-
-        const { data, error } = await supabase
-          .from('clients')
-          .insert([{ ...client, organization_id: profile.organization_id }])
-          .select()
-          .single();
-
-        if (error) throw error;
-        
-        toast({
-          title: 'Cliente criado com sucesso!',
-          description: `Cliente ${client.name} foi adicionado`
-        });
-        
-        await fetchClients();
-        return { data, error: null };
-      }
-    } catch (error: any) {
+    },
+    onError: (error) => {
       toast({
         title: 'Erro ao criar cliente',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
-      return { data: null, error };
-    }
-  };
+    },
+  });
 
-  const updateClient = async (id: string, updates: Partial<Client>) => {
-    try {
-      if (isTestMode) {
-        // Mock client update
-        await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API delay
-        
-        const savedClients = localStorage.getItem('detetizapro_test_clients');
-        const currentClients = savedClients ? JSON.parse(savedClients) : MOCK_CLIENTS;
-        
-        const updatedClients = currentClients.map((client: Client) => 
-          client.id === id 
-            ? { ...client, ...updates, updated_at: new Date().toISOString() }
-            : client
-        );
-        
-        localStorage.setItem('detetizapro_test_clients', JSON.stringify(updatedClients));
-        setClients(updatedClients);
-        
-        toast({
-          title: 'Cliente atualizado com sucesso!',
-          description: `Cliente ${updates.name || 'foi'} atualizado`
-        });
-        
-        return { data: updatedClients.find((c: Client) => c.id === id), error: null };
-      } else {
-        // Real Supabase update
-        const { data, error } = await supabase
-          .from('clients')
-          .update(updates)
-          .eq('id', id)
-          .select()
-          .single();
+  // Mutation para atualizar um cliente
+  const { mutateAsync: updateClient } = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Client> }) => {
+      const organizationId = await getOrganizationId();
+      const { data, error } = await supabase
+        .from('clients')
+        .update(updates)
+        .eq('id', id)
+        .eq('organization_id', organizationId) // Garante que só pode atualizar cliente da própria org
+        .select()
+        .single();
 
-        if (error) throw error;
-        
-        toast({
-          title: 'Cliente atualizado com sucesso!',
-          description: `Cliente ${updates.name || 'foi'} atualizado`
-        });
-        
-        await fetchClients();
-        return { data, error: null };
-      }
-    } catch (error: any) {
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (updatedClient) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['client', updatedClient.id] });
+      toast({
+        title: 'Cliente atualizado com sucesso!',
+        description: `Cliente ${updatedClient.name} foi atualizado.`,
+      });
+    },
+    onError: (error) => {
       toast({
         title: 'Erro ao atualizar cliente',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
-      return { data: null, error };
-    }
-  };
+    },
+  });
 
-  const deleteClient = async (id: string) => {
-    try {
-      if (isTestMode) {
-        // Mock client deletion
-        await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API delay
-        
-        const savedClients = localStorage.getItem('detetizapro_test_clients');
-        const currentClients = savedClients ? JSON.parse(savedClients) : MOCK_CLIENTS;
-        
-        const updatedClients = currentClients.filter((client: Client) => client.id !== id);
-        
-        localStorage.setItem('detetizapro_test_clients', JSON.stringify(updatedClients));
-        setClients(updatedClients);
-        
-        toast({
-          title: 'Cliente removido com sucesso!',
-          description: 'O cliente foi removido do sistema'
-        });
-        
-        return { error: null };
-      } else {
-        // Real Supabase deletion
-        const { error } = await supabase
-          .from('clients')
-          .delete()
-          .eq('id', id);
+  // Mutation para deletar um cliente
+  const { mutateAsync: deleteClient } = useMutation({
+    mutationFn: async (id: string) => {
+      const organizationId = await getOrganizationId();
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', id)
+        .eq('organization_id', organizationId); // Garante que só pode deletar cliente da própria org
 
-        if (error) throw error;
-        
-        toast({
-          title: 'Cliente removido com sucesso!',
-          description: 'O cliente foi removido do sistema'
-        });
-        
-        await fetchClients();
-        return { error: null };
-      }
-    } catch (error: any) {
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast({
+        title: 'Cliente removido com sucesso!',
+      });
+    },
+    onError: (error) => {
       toast({
         title: 'Erro ao remover cliente',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
-      return { error };
-    }
-  };
-
-  useEffect(() => {
-    fetchClients();
-  }, [isTestMode]);
+    },
+  });
 
   return {
     clients,
-    loading,
-    fetchClients,
+    isLoading,
+    isError,
     createClient,
     updateClient,
-    deleteClient
+    deleteClient,
   };
 }
