@@ -10,24 +10,6 @@ type Client = Database['public']['Tables']['clients']['Row'];
 // Re-exporta o tipo Client para ser usado em outras partes da aplicação
 export type { Client };
 
-// Função auxiliar para obter o organization_id do usuário logado
-const getOrganizationId = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado.');
-
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single();
-
-  if (error || !profile?.organization_id) {
-    throw new Error('Organização não encontrada para este usuário.');
-  }
-
-  return profile.organization_id;
-};
-
 // Hook para buscar um único cliente pelo ID
 export function useClient(id: string | undefined) {
   const { user } = useAuth();
@@ -63,13 +45,13 @@ export function useClient(id: string | undefined) {
 export function useClients() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // Usado para reativar a query no login/logout
+  const { user, organizationId } = useAuth(); // Usado para reativar a query no login/logout
 
   // Query para buscar todos os clientes da organização
   const { data: clients, isLoading, isError } = useQuery<Client[]>({
     queryKey: ['clients', user?.id],
     queryFn: async () => {
-      const organizationId = await getOrganizationId();
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('clients')
         .select('*')
@@ -85,7 +67,10 @@ export function useClients() {
   // Mutation para criar um novo cliente
   const { mutateAsync: createClient } = useMutation({
     mutationFn: async (clientData: Omit<Client, 'id' | 'created_at' | 'organization_id'>) => {
-      const organizationId = await getOrganizationId();
+      if (!organizationId) {
+        throw new Error('Organização não encontrada para este usuário.');
+      }
+
       const { data, error } = await supabase
         .from('clients')
         .insert([{ ...clientData, organization_id: organizationId }])
@@ -179,3 +164,21 @@ export function useClients() {
     deleteClient,
   };
 }
+
+// Função auxiliar para obter o organization_id do usuário logado
+const getOrganizationId = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuário não autenticado.');
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single();
+
+  if (error || !profile?.organization_id) {
+    throw new Error('Organização não encontrada para este usuário.');
+  }
+
+  return profile.organization_id;
+};

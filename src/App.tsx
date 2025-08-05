@@ -37,34 +37,33 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/login" element={<Auth />} />
-            <Route path="/super-admin" element={<SuperAdminRoute><SuperAdmin /></SuperAdminRoute>} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/login" element={<Auth />} />
+                <Route path="/super-admin" element={<SuperAdminRoute><SuperAdmin /></SuperAdminRoute>} />
+                <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
 
-            <Route path="/renovacoes" element={<ProtectedRoute><RenovacoesSimples /></ProtectedRoute>} />
-            <Route path="/chamados" element={<ProtectedRoute><Chamados /></ProtectedRoute>} />
-            <Route path="/chamados/novo" element={<ProtectedRoute><NovoChamado /></ProtectedRoute>} />
-            <Route path="/chamados/:id/editar" element={<ProtectedRoute><EditarChamado /></ProtectedRoute>} />
-            <Route path="/equipes" element={<ProtectedRoute><Equipes /></ProtectedRoute>} />
-            <Route path="/equipes/nova" element={<ProtectedRoute><NovaEquipe /></ProtectedRoute>} />
-            <Route path="/equipes/:id/editar" element={<ProtectedRoute><EditarEquipe /></ProtectedRoute>} />
-            <Route path="/clientes/novo" element={<ProtectedRoute><NovoCliente /></ProtectedRoute>} />
-            <Route path="/clientes/:id/editar" element={<ProtectedRoute><EditarCliente /></ProtectedRoute>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          
-            {/* PWA Components */}
-            <PWAInstallBanner />
-            <PWAUpdateBanner />
-          </BrowserRouter>
-        </TooltipProvider>
-      </SafariMobileFix>
-    </AuthProvider>
-  </QueryClientProvider>
+                <Route path="/renovacoes" element={<ProtectedRoute><RenovacoesSimples /></ProtectedRoute>} />
+                <Route path="/chamados" element={<ProtectedRoute><Chamados /></ProtectedRoute>} />
+                <Route path="/chamados/novo" element={<ProtectedRoute><NovoChamado /></ProtectedRoute>} />
+                <Route path="/chamados/:id/editar" element={<ProtectedRoute><EditarChamado /></ProtectedRoute>} />
+                <Route path="/equipes" element={<ProtectedRoute><Equipes /></ProtectedRoute>} />
+                <Route path="/equipes/nova" element={<ProtectedRoute><NovaEquipe /></ProtectedRoute>} />
+                <Route path="/equipes/:id/editar" element={<ProtectedRoute><EditarEquipe /></ProtectedRoute>} />
+                <Route path="/clientes/novo" element={<ProtectedRoute><NovoCliente /></ProtectedRoute>} />
+                <Route path="/clientes/:id/editar" element={<ProtectedRoute><EditarCliente /></ProtectedRoute>} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              {/* PWA Components */}
+              <PWAInstallBanner />
+              <PWAUpdateBanner />
+            </BrowserRouter>
+          </TooltipProvider>
+        </SafariMobileFix>
+      </AuthProvider>
+    </QueryClientProvider>
   </ErrorBoundary>
 );
 
