@@ -48,12 +48,14 @@ export default function Chamados() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este chamado?')) {
-      deleteServiceCall(id, {
-        onSuccess: () => toast({ description: 'Chamado excluído com sucesso!' }),
-        onError: (error) => toast({ variant: 'destructive', title: 'Erro', description: error.message }),
-      });
+      try {
+        await deleteServiceCall(id);
+        toast({ description: 'Chamado excluído com sucesso!' });
+      } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Erro ao excluir chamado', description: error.message });
+      }
     }
   };
 
@@ -121,12 +123,14 @@ export default function Chamados() {
                       <span>{new Date(call.scheduled_date).toLocaleDateString()}</span>
                     </div>
                   )}
-                  {call.teams && (
-                    <div className="flex items-center">
-                      <User className="w-4 h-4 mr-2" />
-                      <span>Equipe: {call.teams.name || 'Não atribuída'}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center">
+                    <User className="w-4 h-4 mr-2" />
+                    {call.teams?.name ? (
+                      <span>Equipe: {call.teams.name}</span>
+                    ) : (
+                      <span className="text-muted-foreground/80">Equipe não atribuída</span>
+                    )}
+                  </div>
                 </div>
               </CardContent>
               <div className="p-4 pt-0 flex justify-end gap-2 border-t mt-auto">

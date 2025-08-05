@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase.js';
+import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Database } from '@/types/database.types';
@@ -7,13 +7,13 @@ import { Database } from '@/types/database.types';
 // Define o tipo Team baseado nos tipos gerados pelo Supabase
 export type Team = Database['public']['Tables']['teams']['Row'];
 export type NewTeam = Database['public']['Tables']['teams']['Insert'];
+export type UpdateTeam = Database['public']['Tables']['teams']['Update'];
 
 export function useTeam(id: string | undefined) {
-  const { user } = useAuth();
-  const organizationId = user?.user_metadata.organization_id;
+  const { organizationId } = useAuth();
 
   const { data: team, isLoading, isError } = useQuery<Team | null>({
-    queryKey: ['team', id],
+    queryKey: ['team', id, organizationId],
     queryFn: async () => {
       if (!id || !organizationId) return null;
 
@@ -33,17 +33,16 @@ export function useTeam(id: string | undefined) {
       }
       return data;
     },
-    enabled: !!user && !!id && !!organizationId,
+    enabled: !!id && !!organizationId,
   });
 
   return { team, isLoading, isError };
 }
 
 export function useTeams() {
-  const { user } = useAuth();
+  const { organizationId } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const organizationId = user?.user_metadata?.organization_id;
 
   const { data: teams, isLoading, isError } = useQuery<Team[]>({ 
     queryKey: ['teams', organizationId],
@@ -67,11 +66,11 @@ export function useTeams() {
   });
 
   const { mutateAsync: createTeam } = useMutation({
-    mutationFn: async (teamData: Omit<NewTeam, 'id' | 'organization_id'>) => {
+    mutationFn: async (teamData: NewTeam) => {
       if (!organizationId) throw new Error('Organização não encontrada');
       const { data, error } = await supabase
         .from('teams')
-        .insert([{ ...teamData, organization_id: organizationId }])
+        .insert({ ...teamData, organization_id: organizationId })
         .select()
         .single();
       if (error) throw new Error(error.message);
@@ -87,7 +86,7 @@ export function useTeams() {
   });
 
   const { mutateAsync: updateTeam } = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<NewTeam> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: UpdateTeam }) => {
       if (!organizationId) throw new Error('Organização não encontrada');
       const { data, error } = await supabase
         .from('teams')
