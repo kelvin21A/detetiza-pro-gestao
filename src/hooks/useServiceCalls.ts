@@ -84,6 +84,8 @@ export const useServiceCalls = () => {
         status: newCall.status || 'pending',
       };
 
+      console.log('Objeto enviado para o Supabase:', callWithDefaults);
+
       const { data, error } = await supabase
         .from('service_calls')
         .insert(callWithDefaults)
