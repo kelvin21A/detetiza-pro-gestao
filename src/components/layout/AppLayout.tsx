@@ -1,6 +1,15 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Bell, User, Settings } from "lucide-react";
+import { 
+  Bell, 
+  User, 
+  Settings, 
+  LayoutDashboard, 
+  Users, 
+  CalendarCheck2, 
+  Phone, 
+  Users2 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AppLayoutProps {
