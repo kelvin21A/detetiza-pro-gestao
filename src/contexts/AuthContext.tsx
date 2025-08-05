@@ -11,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   organizationId: string | null;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signOut: () => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,12 +85,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    return { error };
+  };
+
   const value = useMemo(() => ({
     user,
     profile,
     loading,
     organizationId: profile?.organization_id || null,
     signIn,
+    signOut,
   }), [user, profile, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

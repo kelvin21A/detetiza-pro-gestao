@@ -180,7 +180,7 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Selecione um status" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
