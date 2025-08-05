@@ -4,7 +4,7 @@ import { Plus, Search, Users2, Edit, Trash2, AlertTriangle, Loader2 } from 'luci
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import AppLayout from '@/components/layout/AppLayout';
+
 import { useTeams } from '@/hooks/useTeams';
 import {
   AlertDialog,
@@ -131,28 +131,26 @@ export default function Equipes() {
   };
 
   return (
-    <AppLayout title="Equipes">
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight text-red-600">Gestão de Equipes</h2>
-          <Button onClick={() => navigate('/equipes/nova')}>
-            <Plus className="mr-2 h-4 w-4" /> Adicionar Equipe
-          </Button>
-        </div>
-
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Buscar por nome ou descrição..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-            disabled={isLoading || isError}
-          />
-        </div>
-
-        {renderContent()}
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight text-red-600">Gestão de Equipes</h2>
+        <Button onClick={() => navigate('/equipes/nova')}>
+          <Plus className="mr-2 h-4 w-4" /> Adicionar Equipe
+        </Button>
       </div>
-    </AppLayout>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <Input
+          placeholder="Buscar por nome ou descrição..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+          disabled={isLoading || isError}
+        />
+      </div>
+
+      {renderContent()}
+    </div>
   );
 }

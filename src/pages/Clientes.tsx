@@ -1,14 +1,14 @@
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Eye, Search, Filter, Edit, Trash, Plus, Loader2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useClients, Client } from "@/hooks/useClients";
 import { useWhatsApp } from "@/utils/whatsapp";
-import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon';
+import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
 
 export default function Clientes() {
   const { toast } = useToast();
@@ -70,15 +70,15 @@ export default function Clientes() {
   const statusFilters = ['todos', 'em-dia', 'a-vencer', 'vencido'];
 
   return (
-    <div className="p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Clientes</h1>
+    <div className="p-4 sm:p-6 space-y-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-800">Clientes</h1>
         <Button asChild>
           <Link to="/clientes/novo"><Plus className="mr-2 h-4 w-4" /> Novo Cliente</Link>
         </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
@@ -115,57 +115,36 @@ export default function Clientes() {
             <p className="text-muted-foreground text-sm">Tente recarregar a página.</p>
           </div>
         ) : filteredClients.length > 0 ? (
-          filteredClients.map((client) => (
-            <Card key={client.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-lg text-foreground">{client.name}</h3>
-                      {getStatusBadge(client.status)}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                      {client.phone && <div><strong>Telefone:</strong> {client.phone}</div>}
-                      {client.email && <div><strong>Email:</strong> {client.email}</div>}
-                      {client.address && <div className="col-span-full"><strong>Endereço:</strong> {client.address}</div>}
-                    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredClients.map((client) => (
+              <Card key={client.id} className="hover:shadow-lg transition-shadow flex flex-col">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{client.name}</CardTitle>
+                    {getStatusBadge(client.status)}
                   </div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <a 
-                      href={`https://wa.me/55${client.phone?.replace(/\D/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Enviar mensagem WhatsApp"
-                    >
-                      <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-2">
-                        <WhatsAppIcon className="h-4 w-4" />
-                        <span className="hidden sm:inline">WhatsApp</span>
-                      </Button>
-                    </a>
-                    <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" asChild>
-                      <Link to={`/clientes/${client.id}/editar`} title="Editar Cliente">
-                        <Edit className="w-5 h-5" />
-                      </Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" asChild>
-                      <Link to={`/clientes/${client.id}/editar`} title="Ver Detalhes">
-                        <Eye className="w-5 h-5" />
-                      </Link>
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => handleDelete(client.id)}
-                      className="text-destructive hover:text-destructive hover:bg-red-50"
-                      title="Excluir Cliente"
-                    >
-                      <Trash className="w-5 h-5" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                </CardHeader>
+                <CardContent className="flex-grow space-y-2 text-sm text-muted-foreground">
+                  {client.phone && <p><strong>Telefone:</strong> {client.phone}</p>}
+                  {client.email && <p><strong>Email:</strong> {client.email}</p>}
+                  {client.address && <p><strong>Endereço:</strong> {client.address}</p>}
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2 pt-4 border-t">
+                  <WhatsAppButton 
+                    onClick={() => handleWhatsAppClick(client)}
+                    text=""
+                    className="h-9 w-9 p-2"
+                  />
+                  <Button variant="ghost" size="icon" asChild>
+                    <Link to={`/clientes/${client.id}/editar`}><Edit className="w-4 h-4" /></Link>
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(client.id)} className="text-destructive hover:text-destructive">
+                    <Trash className="w-4 h-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
         ) : (
           <div className="text-center py-12">
             <h3 className="text-lg font-medium">Nenhum cliente encontrado</h3>

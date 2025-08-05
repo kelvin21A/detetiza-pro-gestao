@@ -5,64 +5,93 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, Search, FileDown, Phone } from 'lucide-react';
-import { useContracts } from '@/hooks/useContracts';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, FileDown, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+import { useContracts, Contract } from '@/hooks/useContracts'; 
+import { Loader2 } from 'lucide-react';
+import { WhatsAppButton } from '@/components/ui/WhatsAppButton'; 
 
-interface Renovacao {
-  id: string;
-  cliente: string;
-  plano: string;
-  valor: number;
-  dataVencimento: string;
-  status: 'Vence Hoje' | 'Vence em 5 dias' | 'Vence em 15 dias' | 'Vencido';
-}
+const getDaysUntilExpiration = (endDate: string): number => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiration = new Date(endDate);
+  const diffTime = expiration.getTime() - today.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
 
-const getStatusVariant = (status: Renovacao['status']) => {
+const getContractStatus = (endDate: string): 'expired' | 'expiring_soon' | 'active' => {
+  const daysLeft = getDaysUntilExpiration(endDate);
+  if (daysLeft < 0) return 'expired';
+  if (daysLeft <= 30) return 'expiring_soon';
+  return 'active';
+};
+
+const getStatusBadge = (endDate: string) => {
+  const status = getContractStatus(endDate);
+  const daysLeft = getDaysUntilExpiration(endDate);
+  
   switch (status) {
-    case 'Vence Hoje':
-      return 'destructive';
-    case 'Vence em 5 dias':
-      return 'secondary';
-    case 'Vence em 15 dias':
-      return 'outline';
-    case 'Vencido':
-      return 'default';
+    case "expired":
+      return (
+        <Badge variant="destructive">
+          <AlertTriangle className="w-3 h-3 mr-1" />
+          Vencido ({Math.abs(daysLeft)} dias)
+        </Badge>
+      );
+    case "expiring_soon":
+      return (
+        <Badge className="bg-yellow-400 text-black hover:bg-yellow-500">
+          <Clock className="w-3 h-3 mr-1" />
+          Vence em {daysLeft} dias
+        </Badge>
+      );
     default:
-      return 'default';
+      return (
+        <Badge variant="default">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Ativo
+        </Badge>
+      );
   }
 };
 
 export default function Renovacoes() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Renovacao; direction: 'ascending' | 'descending' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Contract; direction: 'ascending' | 'descending' } | null>(null);
 
   const { contracts, isLoading, isError } = useContracts();
 
   const sortedRenovacoes = useMemo(() => {
     if (!contracts) return [];
 
-    let renovacoesData: Renovacao[] = contracts.map(contract => ({
-      id: contract.id,
-      cliente: contract.client_id,
-      plano: contract.details || 'N/A',
-      valor: contract.price || 0,
-      dataVencimento: new Date(contract.end_date).toLocaleDateString('pt-BR'),
-      status: 'Vence em 15 dias',
-    }));
+    let renovacoesData: Contract[] = [...contracts];
 
     if (searchTerm) {
       renovacoesData = renovacoesData.filter(item =>
-        item.cliente.toLowerCase().includes(searchTerm.toLowerCase())
+        item.clients?.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (sortConfig !== null) {
       renovacoesData.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        const key = sortConfig.key;
+        let aValue: any;
+        let bValue: any;
+
+        if (key === 'clients') {
+          aValue = a.clients?.name || '';
+          bValue = b.clients?.name || '';
+        } else if (key === 'end_date') {
+          aValue = new Date(a.end_date).getTime();
+          bValue = new Date(b.end_date).getTime();
+        } else {
+          aValue = a[key];
+          bValue = b[key];
+        }
+
+        if (aValue < bValue) {
           return sortConfig.direction === 'ascending' ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aValue > bValue) {
           return sortConfig.direction === 'ascending' ? 1 : -1;
         }
         return 0;
@@ -71,7 +100,7 @@ export default function Renovacoes() {
     return renovacoesData;
   }, [contracts, searchTerm, sortConfig]);
 
-  const requestSort = (key: keyof Renovacao) => {
+  const requestSort = (key: keyof Contract) => {
     let direction: 'ascending' | 'descending' = 'ascending';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
@@ -79,8 +108,21 @@ export default function Renovacoes() {
     setSortConfig({ key, direction });
   };
 
-  const handleWhatsAppClick = (clienteNome: string) => {
-    console.log(`Iniciar conversa com ${clienteNome}`);
+  const handleWhatsAppClick = (contract: Contract) => {
+    if (!contract.clients || !contract.clients.phone) return;
+    const daysLeft = getDaysUntilExpiration(contract.end_date);
+    const status = getContractStatus(contract.end_date);
+    
+    let message = '';
+    if (status === 'expired') {
+      message = `Olá ${contract.clients.name}! Seu contrato conosco venceu há ${Math.abs(daysLeft)} dias. Gostaria de renovar para continuar protegido?`;
+    } else {
+      message = `Olá ${contract.clients.name}, tudo bem? Seu contrato está prestes a vencer em ${daysLeft} dias. Vamos conversar sobre a renovação?`;
+    }
+
+    const phone = contract.clients.phone.replace(/\D/g, '') || '';
+    const whatsappUrl = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   const renderContent = () => {
@@ -106,24 +148,24 @@ export default function Renovacoes() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead onClick={() => requestSort('cliente')}>
+            <TableHead onClick={() => requestSort('clients')}>
               <div className="flex items-center cursor-pointer">
-                Cliente {sortConfig?.key === 'cliente' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+                Cliente {sortConfig?.key === 'clients' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
               </div>
             </TableHead>
-            <TableHead onClick={() => requestSort('plano')}>
+            <TableHead onClick={() => requestSort('details')}>
               <div className="flex items-center cursor-pointer">
-                Plano {sortConfig?.key === 'plano' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+                Plano {sortConfig?.key === 'details' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
               </div>
             </TableHead>
-            <TableHead onClick={() => requestSort('valor')}>
+            <TableHead onClick={() => requestSort('price')}>
               <div className="flex items-center cursor-pointer">
-                Valor {sortConfig?.key === 'valor' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+                Valor {sortConfig?.key === 'price' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
               </div>
             </TableHead>
-            <TableHead onClick={() => requestSort('dataVencimento')}>
+            <TableHead onClick={() => requestSort('end_date')}>
               <div className="flex items-center cursor-pointer">
-                Data de Vencimento {sortConfig?.key === 'dataVencimento' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
+                Data de Vencimento {sortConfig?.key === 'end_date' && (sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />)}
               </div>
             </TableHead>
             <TableHead>Status</TableHead>
@@ -133,17 +175,20 @@ export default function Renovacoes() {
         <TableBody>
           {sortedRenovacoes.map((renovacao) => (
             <TableRow key={renovacao.id}>
-              <TableCell>{renovacao.cliente}</TableCell>
-              <TableCell>{renovacao.plano}</TableCell>
-              <TableCell>R$ {renovacao.valor.toFixed(2)}</TableCell>
-              <TableCell>{renovacao.dataVencimento}</TableCell>
+              <TableCell>{renovacao.clients?.name || 'Cliente não encontrado'}</TableCell>
+              <TableCell>{renovacao.details || 'N/A'}</TableCell>
+              <TableCell>R$ {renovacao.price?.toFixed(2) || '0.00'}</TableCell>
+              <TableCell>{new Date(renovacao.end_date).toLocaleDateString('pt-BR')}</TableCell>
               <TableCell>
-                <Badge variant={getStatusVariant(renovacao.status)}>{renovacao.status}</Badge>
+                {getStatusBadge(renovacao.end_date)}
               </TableCell>
               <TableCell>
-                <Button variant="ghost" size="icon" onClick={() => handleWhatsAppClick(renovacao.cliente)}>
-                  <Phone className="h-4 w-4 text-green-500" />
-                </Button>
+                <WhatsAppButton
+                  onClick={() => handleWhatsAppClick(renovacao)}
+                  disabled={!renovacao.clients?.phone}
+                  text=""
+                  className="h-9 w-9 p-2"
+                />
               </TableCell>
             </TableRow>
           ))}

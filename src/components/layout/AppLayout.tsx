@@ -1,12 +1,45 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Bell, User } from "lucide-react";
+import { Bell, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AppLayoutProps {
   children: React.ReactNode;
   title?: string;
 }
+
+export const navItems = [
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: <LayoutDashboard className="h-5 w-5" />,
+  },
+  {
+    title: "Usuários",
+    href: "/usuarios",
+    icon: <Users className="h-5 w-5" />,
+  },
+  {
+    title: "Agendamentos",
+    href: "/agendamentos",
+    icon: <CalendarCheck2 className="h-5 w-5" />,
+  },
+  {
+    title: "Contato",
+    href: "/contato",
+    icon: <Phone className="h-5 w-5" />,
+  },
+  {
+    title: "Equipes",
+    href: "/equipes",
+    icon: <Users2 className="h-5 w-5" />,
+  },
+  {
+    title: "Configurações",
+    href: "/configuracoes",
+    icon: <Settings className="h-5 w-5" />,
+  },
+];
 
 export default function AppLayout({ children, title }: AppLayoutProps) {
   return (

@@ -2,7 +2,6 @@ import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import {
   CheckCircle,
   Clock,
-  ClipboardList,
   Users,
   TrendingUp,
   AlertTriangle,
@@ -11,6 +10,8 @@ import {
 } from "lucide-react";
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -49,128 +50,109 @@ export default function Dashboard() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <h2 className="text-3xl font-bold tracking-tight text-gray-800">Dashboard</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardCard
           title="Clientes Ativos"
-          value={loading ? '...' : currentMetrics.totalClients}
+          value={currentMetrics.totalClients}
           icon={Users}
-          iconColor="text-red-600"
           loading={loading}
         />
         <DashboardCard
           title="Serviços Concluídos (Mês)"
-          value={loading ? '...' : currentMetrics.completedServices}
+          value={currentMetrics.completedServices}
           icon={CheckCircle}
-          iconColor="text-red-600"
           loading={loading}
         />
         <DashboardCard
           title="Chamados Pendentes"
-          value={loading ? '...' : currentMetrics.pendingCalls}
+          value={currentMetrics.pendingCalls}
           icon={Clock}
-          iconColor="text-red-600"
-          loading={loading}
-        />
-         <DashboardCard
-          title="Renovações Pendentes"
-          value={loading ? '...' : currentMetrics.pendingRenewals}
-          icon={TrendingUp}
-          iconColor="text-red-600"
           loading={loading}
         />
         <DashboardCard
-          title="Receita Mensal Estimada"
-          value={loading ? '...' : formatCurrency(currentMetrics.monthlyRevenue)}
+          title="Renovações Pendentes"
+          value={currentMetrics.pendingRenewals}
+          icon={TrendingUp}
+          loading={loading}
+        />
+        <DashboardCard
+          title="Receita Mensal"
+          value={formatCurrency(currentMetrics.monthlyRevenue)}
           icon={DollarSign}
-          iconColor="text-red-600"
           loading={loading}
         />
         <DashboardCard
           title="Equipes Ativas"
-          value={loading ? '...' : currentMetrics.activeTeams}
+          value={currentMetrics.activeTeams}
           icon={Calendar}
-          iconColor="text-red-600"
           loading={loading}
         />
       </div>
       
-      <div className="bg-white rounded-lg border border-gray-200 p-8">
-        <div className="text-center mb-6">
-          <h3 className="text-xl font-semibold text-black mb-2">
-            📊 Visão Geral da Operação
-          </h3>
-          <p className="text-gray-600">
-            Acompanhe as principais métricas da sua detetizadora em tempo real
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {!loading && currentMetrics.expiringContracts > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <div className="flex items-center mb-3">
-                <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
-                <h4 className="font-semibold text-red-800">Atenção Necessária</h4>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Visão Geral da Operação</CardTitle>
+            <CardDescription>Acompanhe as principais métricas da sua empresa.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {!loading && currentMetrics.expiringContracts > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center mb-2">
+                  <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
+                  <h4 className="font-semibold text-red-800">Atenção Necessária</h4>
+                </div>
+                <p className="text-red-700 text-sm mb-3">
+                  {currentMetrics.expiringContracts} contrato{currentMetrics.expiringContracts > 1 ? 's' : ''} vencendo nos próximos 30 dias.
+                </p>
+                <Button onClick={() => navigate('/renovacoes')} size="sm">
+                  Ver Renovações
+                </Button>
               </div>
-              <p className="text-red-700 text-sm mb-3">
-                {currentMetrics.expiringContracts} contrato{currentMetrics.expiringContracts > 1 ? 's' : ''} vencendo nos próximos 30 dias
-              </p>
-              <button 
-                onClick={() => navigate('/renovacoes')}
-                className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors"
-              >
-                Ver Renovações
-              </button>
-            </div>
-          )}
-
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-            <div className="flex items-center mb-3">
-              <TrendingUp className="w-5 h-5 text-gray-600 mr-2" />
-              <h4 className="font-semibold text-gray-800">Status Operacional</h4>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Taxa de Conclusão:</span>
-                <span className="font-medium text-black">
-                  {(currentMetrics.completedServices > 0 || currentMetrics.pendingCalls > 0)
-                    ? `${Math.round((currentMetrics.completedServices / (currentMetrics.completedServices + currentMetrics.pendingCalls)) * 100)}%`
-                    : '100%'
-                  }
-                </span>
+            )}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center mb-2">
+                <TrendingUp className="w-5 h-5 text-gray-600 mr-2" />
+                <h4 className="font-semibold text-gray-800">Status Operacional</h4>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Clientes por Equipe:</span>
-                <span className="font-medium text-black">
-                  {currentMetrics.activeTeams > 0 ? Math.round(currentMetrics.totalClients / currentMetrics.activeTeams) : 0}
-                </span>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Taxa de Conclusão:</span>
+                  <span className="font-medium text-black">
+                    {(currentMetrics.completedServices > 0 || currentMetrics.pendingCalls > 0)
+                      ? `${Math.round((currentMetrics.completedServices / (currentMetrics.completedServices + currentMetrics.pendingCalls)) * 100)}%`
+                      : '100%'
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Clientes por Equipe:</span>
+                  <span className="font-medium text-black">
+                    {currentMetrics.activeTeams > 0 ? Math.round(currentMetrics.totalClients / currentMetrics.activeTeams) : 0}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <h4 className="font-semibold text-black mb-4">🚀 Ações Rápidas</h4>
-          <div className="flex flex-wrap gap-3">
-            <button 
-              onClick={() => navigate('/clientes/novo')}
-              className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition-colors"
-            >
+        <Card>
+          <CardHeader>
+            <CardTitle>🚀 Ações Rápidas</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            <Button onClick={() => navigate('/clientes/novo')}>
               + Novo Cliente
-            </button>
-            <button 
-              onClick={() => navigate('/chamados')}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded transition-colors"
-            >
+            </Button>
+            <Button onClick={() => navigate('/chamados')} variant="secondary">
               Ver Chamados
-            </button>
-            <button 
-              onClick={() => navigate('/renovacoes')}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded transition-colors"
-            >
+            </Button>
+            <Button onClick={() => navigate('/renovacoes')} variant="secondary">
               Gerenciar Renovações
-            </button>
-          </div>
-        </div>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

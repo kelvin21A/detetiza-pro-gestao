@@ -22,6 +22,7 @@ import NovaEquipe from "./pages/NovaEquipe";
 import EditarEquipe from "./pages/EditarEquipe";
 import NovoCliente from "./pages/NovoCliente";
 import EditarCliente from "./pages/EditarCliente";
+import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -57,6 +58,7 @@ const AppContent = () => {
         <Route path="/equipes/:id/editar" element={<ProtectedRoute title="Editar Equipe"><EditarEquipe /></ProtectedRoute>} />
         <Route path="/clientes/novo" element={<ProtectedRoute title="Novo Cliente"><NovoCliente /></ProtectedRoute>} />
         <Route path="/clientes/:id/editar" element={<ProtectedRoute title="Editar Cliente"><EditarCliente /></ProtectedRoute>} />
+        <Route path="/configuracoes" element={<ProtectedRoute title="Configurações"><Configuracoes /></ProtectedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

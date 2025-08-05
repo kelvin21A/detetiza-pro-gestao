@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useContracts, Contract } from '@/hooks/useContracts';
 import { toast } from 'sonner';
+import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
 
 export default function RenovacoesSimples() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -206,15 +207,12 @@ export default function RenovacoesSimples() {
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
+                  <WhatsAppButton
                     onClick={() => handleWhatsAppContact(contract)}
-                    className="bg-green-600 hover:bg-green-700 text-white"
                     disabled={!contract.clients?.phone}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-1" />
-                    WhatsApp
-                  </Button>
+                    text="WhatsApp"
+                    className="h-9"
+                  />
                   
                   <Button 
                     size="sm" 

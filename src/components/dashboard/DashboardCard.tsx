@@ -1,26 +1,27 @@
 import { LucideIcon } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardCardProps {
   title: string;
-  value: number;
+  value: string | number;
   icon: LucideIcon;
-  iconColor?: string;
+  loading?: boolean;
 }
 
-export function DashboardCard({ title, value, icon: Icon, iconColor = "text-primary" }: DashboardCardProps) {
+export function DashboardCard({ title, value, icon: Icon, loading }: DashboardCardProps) {
   return (
-    <Card className="p-6 hover:shadow-md transition-shadow">
-      <CardContent className="p-0">
-        <div className="flex items-center gap-4">
-          <div className="flex-shrink-0">
-            <Icon className={`w-12 h-12 ${iconColor}`} />
-          </div>
-          <div className="flex-1">
-            <p className="text-3xl font-bold text-foreground">{value}</p>
-            <p className="text-sm text-muted-foreground mt-1">{title}</p>
-          </div>
-        </div>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Skeleton className="h-8 w-3/4" />
+        ) : (
+          <div className="text-2xl font-bold">{value}</div>
+        )}
       </CardContent>
     </Card>
   );

@@ -18,7 +18,7 @@ const formSchema = z.object({
   client_id: z.string().uuid({ message: 'Selecione um cliente.' }),
   team_id: z.string().uuid({ message: 'Selecione uma equipe.' }).optional().or(z.literal('')), // Aceita string vazia
   description: z.string().min(5, { message: 'A descrição deve ter pelo menos 5 caracteres.' }),
-  status: z.enum(['pendente', 'em_andamento', 'concluido']),
+  status: z.enum(['pending', 'in_progress', 'completed']), // CORREÇÃO: Usa valores em inglês
   scheduled_date: z.string().refine((date) => !isNaN(Date.parse(date)), { message: 'Data inválida.' }),
 });
 
@@ -45,12 +45,12 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
           ...initialData,
           team_id: initialData.team_id || '',
           scheduled_date: new Date(initialData.scheduled_date).toISOString().substring(0, 16),
-          status: initialData.status as 'pendente' | 'em_andamento' | 'concluido', // Type assertion
+          status: initialData.status as 'pending' | 'in_progress' | 'completed', // CORREÇÃO: Type assertion para inglês
         }
       : { 
           title: '',
           client_id: '',
-          status: 'pendente', 
+          status: 'pending', // CORREÇÃO: Valor padrão em inglês
           description: '', 
           team_id: '',
           scheduled_date: new Date().toISOString().substring(0, 16) 
@@ -183,9 +183,9 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                  <SelectItem value="concluido">Concluído</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="in_progress">Em Andamento</SelectItem>
+                  <SelectItem value="completed">Concluído</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
