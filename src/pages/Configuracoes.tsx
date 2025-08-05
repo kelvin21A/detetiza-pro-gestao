@@ -17,6 +17,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const profileFormSchema = z.object({
   full_name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }).max(50, { message: "O nome não pode ter mais de 50 caracteres." }),
@@ -30,8 +31,8 @@ const organizationFormSchema = z.object({
 });
 
 export default function Configuracoes() {
-  const { profile, isLoading: isLoadingProfile, updateProfile, isUpdating: isUpdatingProfile } = useProfile();
-  const { organization, isLoading: isLoadingOrg, updateOrganization, isUpdating: isUpdatingOrg } = useOrganization();
+  const { profile, isLoading: isLoadingProfile, isError: isErrorProfile, error: errorProfile, updateProfile, isUpdating: isUpdatingProfile } = useProfile();
+  const { organization, isLoading: isLoadingOrg, isError: isErrorOrg, error: errorOrg, updateOrganization, isUpdating: isUpdatingOrg } = useOrganization();
 
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
@@ -71,6 +72,7 @@ export default function Configuracoes() {
   }
 
   const isLoading = isLoadingProfile || isLoadingOrg;
+  const isError = isErrorProfile || isErrorOrg;
 
   if (isLoading) {
     return (
@@ -104,6 +106,20 @@ export default function Configuracoes() {
             </CardContent>
           </Card>
         </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+        <Alert variant="destructive">
+          <AlertTitle>Erro ao Carregar as Configurações</AlertTitle>
+          <AlertDescription>
+            <p>Não foi possível carregar os dados do seu perfil ou da sua organização. Por favor, tente recarregar a página.</p>
+            <p className="mt-2 text-xs font-mono">Detalhes: {errorProfile?.message || errorOrg?.message}</p>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

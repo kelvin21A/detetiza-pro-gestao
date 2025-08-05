@@ -49,7 +49,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
         
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-background">
+          <header className="relative z-10 h-16 flex items-center justify-between px-6 border-b border-border bg-background">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="text-foreground" />
               {title && <h1 className="text-2xl font-bold text-foreground">{title}</h1>}
