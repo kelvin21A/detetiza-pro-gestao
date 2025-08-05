@@ -135,7 +135,6 @@ export default function Clientes() {
                   <WhatsAppButton 
                     onClick={() => handleWhatsAppClick(client)}
                     text="WhatsApp"
-                    className="h-9 px-3"
                   />
                   <Button variant="ghost" size="icon" asChild>
                     <Link to={`/clientes/${client.id}/editar`}><Edit className="w-4 h-4" /></Link>

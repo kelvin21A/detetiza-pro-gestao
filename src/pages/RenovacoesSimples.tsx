@@ -210,7 +210,6 @@ export default function RenovacoesSimples() {
                     onClick={() => handleWhatsAppContact(contract)}
                     disabled={!contract.clients?.phone}
                     text="WhatsApp"
-                    className="h-9"
                   />
                   
                   <Button 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { WhatsAppIcon } from './WhatsAppIcon';
+import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon';
 
 interface WhatsAppButtonProps {
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -19,14 +19,14 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
       className={`
-        inline-flex items-center justify-center rounded-md text-sm font-medium 
+        inline-flex items-center justify-center rounded-full text-sm font-bold uppercase tracking-wider
         bg-[#25D366] text-white 
-        hover:bg-[#1DA851] 
+        hover:bg-[#1DA851] hover:shadow-lg
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1DA851] 
-        transition-all duration-200 ease-in-out 
-        shadow-md hover:shadow-lg 
-        px-4 py-2 
-        disabled:bg-slate-400 disabled:cursor-not-allowed disabled:shadow-none
+        transition-all duration-300 ease-in-out 
+        shadow-md
+        px-5 py-2.5
+        disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none
         ${className}
       `}
     >

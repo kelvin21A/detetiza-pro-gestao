@@ -185,8 +185,6 @@ export default function Renovacoes() {
                 <WhatsAppButton
                   onClick={() => handleWhatsAppClick(renovacao)}
                   disabled={!renovacao.clients?.phone}
-                  text=""
-                  className="h-9 w-9 p-2"
                 />
               </TableCell>
             </TableRow>

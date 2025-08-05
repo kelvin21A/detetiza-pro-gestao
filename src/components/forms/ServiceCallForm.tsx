@@ -58,18 +58,21 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
 
   const onSubmit = async (values: ServiceCallFormValues) => {
     try {
+      // Garante que o team_id seja nulo se não for selecionado
+      const finalTeamId = (values.team_id === 'none' || !values.team_id) ? null : values.team_id;
+
       if (isEditMode) {
         const submissionData = {
           ...values,
-          team_id: values.team_id === 'none' ? null : values.team_id || null,
+          team_id: finalTeamId,
         };
-        await updateServiceCall({ id: initialData.id, updates: submissionData });
+        await updateServiceCall({ id: initialData.id, updates: submissionData as ServiceCall });
         toast({ description: 'Chamado atualizado com sucesso!' });
       } else {
         const submissionData: NewServiceCall = {
           ...values,
-          status: 'pending', 
-          team_id: values.team_id === 'none' ? null : values.team_id || null,
+          status: 'pending',
+          team_id: finalTeamId,
         };
         await createServiceCall(submissionData);
         toast({ description: 'Chamado criado com sucesso!' });
