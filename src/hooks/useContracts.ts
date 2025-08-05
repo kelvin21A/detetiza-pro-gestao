@@ -12,10 +12,9 @@ export type Contract = Database['public']['Tables']['contracts']['Row'] & {
 export type UpdateContract = Database['public']['Tables']['contracts']['Update'];
 
 export function useContracts() {
-  const { user } = useAuth();
+  const { organizationId } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const organizationId = user?.user_metadata?.organization_id;
 
   const { data: contracts, isLoading, isError } = useQuery<Contract[]>({ 
     queryKey: ['contracts', organizationId],
