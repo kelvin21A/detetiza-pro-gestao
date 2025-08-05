@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 interface AppLayoutProps {
   children: React.ReactNode;
-  title: string;
+  title?: string;
 }
 
 export default function AppLayout({ children, title }: AppLayoutProps) {
@@ -19,7 +19,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
           <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-background">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="text-foreground" />
-              <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+              {title && <h1 className="text-2xl font-bold text-foreground">{title}</h1>}
             </div>
             
             <div className="flex items-center gap-4">

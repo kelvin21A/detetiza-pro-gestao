@@ -12,13 +12,13 @@ export type { Client };
 
 // Hook para buscar um único cliente pelo ID
 export function useClient(id: string | undefined) {
-  const { user } = useAuth();
+  const { organizationId } = useAuth();
 
   const { data: client, isLoading, isError } = useQuery<Client | null>({
     queryKey: ['client', id],
     queryFn: async () => {
-      if (!id) return null;
-      const organizationId = await getOrganizationId();
+      if (!id || !organizationId) return null;
+      
       const { data, error } = await supabase
         .from('clients')
         .select('*')
@@ -36,7 +36,7 @@ export function useClient(id: string | undefined) {
       }
       return data;
     },
-    enabled: !!user && !!id, // A query só é executada se o usuário e o ID existirem
+    enabled: !!organizationId && !!id, // A query só é executada se a organização e o ID existirem
   });
 
   return { client, isLoading, isError };
@@ -45,11 +45,11 @@ export function useClient(id: string | undefined) {
 export function useClients() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, organizationId } = useAuth(); // Usado para reativar a query no login/logout
+  const { organizationId } = useAuth();
 
   // Query para buscar todos os clientes da organização
   const { data: clients, isLoading, isError } = useQuery<Client[]>({
-    queryKey: ['clients', user?.id],
+    queryKey: ['clients', organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
       const { data, error } = await supabase
@@ -61,7 +61,7 @@ export function useClients() {
       if (error) throw new Error(error.message);
       return data || [];
     },
-    enabled: !!user, // A query só é executada se o usuário estiver logado
+    enabled: !!organizationId, // A query só é executada se a organização existir
   });
 
   // Mutation para criar um novo cliente
@@ -99,7 +99,8 @@ export function useClients() {
   // Mutation para atualizar um cliente
   const { mutateAsync: updateClient } = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Client> }) => {
-      const organizationId = await getOrganizationId();
+      if (!organizationId) throw new Error('Organização não encontrada.');
+
       const { data, error } = await supabase
         .from('clients')
         .update(updates)
@@ -131,7 +132,8 @@ export function useClients() {
   // Mutation para deletar um cliente
   const { mutateAsync: deleteClient } = useMutation({
     mutationFn: async (id: string) => {
-      const organizationId = await getOrganizationId();
+      if (!organizationId) throw new Error('Organização não encontrada.');
+
       const { error } = await supabase
         .from('clients')
         .delete()
@@ -164,21 +166,3 @@ export function useClients() {
     deleteClient,
   };
 }
-
-// Função auxiliar para obter o organization_id do usuário logado
-const getOrganizationId = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuário não autenticado.');
-
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single();
-
-  if (error || !profile?.organization_id) {
-    throw new Error('Organização não encontrada para este usuário.');
-  }
-
-  return profile.organization_id;
-};

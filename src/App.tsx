@@ -45,18 +45,18 @@ const AppContent = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/login" element={<Auth />} />
         <Route path="/super-admin" element={<SuperAdminRoute><SuperAdmin /></SuperAdminRoute>} />
-        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-        <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute title="Dashboard"><Index /></ProtectedRoute>} />
+        <Route path="/clientes" element={<ProtectedRoute title="Clientes"><Clientes /></ProtectedRoute>} />
 
-        <Route path="/renovacoes" element={<ProtectedRoute><RenovacoesSimples /></ProtectedRoute>} />
-        <Route path="/chamados" element={<ProtectedRoute><Chamados /></ProtectedRoute>} />
-        <Route path="/chamados/novo" element={<ProtectedRoute><NovoChamado /></ProtectedRoute>} />
-        <Route path="/chamados/:id/editar" element={<ProtectedRoute><EditarChamado /></ProtectedRoute>} />
-        <Route path="/equipes" element={<ProtectedRoute><Equipes /></ProtectedRoute>} />
-        <Route path="/equipes/nova" element={<ProtectedRoute><NovaEquipe /></ProtectedRoute>} />
-        <Route path="/equipes/:id/editar" element={<ProtectedRoute><EditarEquipe /></ProtectedRoute>} />
-        <Route path="/clientes/novo" element={<ProtectedRoute><NovoCliente /></ProtectedRoute>} />
-        <Route path="/clientes/:id/editar" element={<ProtectedRoute><EditarCliente /></ProtectedRoute>} />
+        <Route path="/renovacoes" element={<ProtectedRoute title="Renovações"><RenovacoesSimples /></ProtectedRoute>} />
+        <Route path="/chamados" element={<ProtectedRoute title="Chamados"><Chamados /></ProtectedRoute>} />
+        <Route path="/chamados/novo" element={<ProtectedRoute title="Novo Chamado"><NovoChamado /></ProtectedRoute>} />
+        <Route path="/chamados/:id/editar" element={<ProtectedRoute title="Editar Chamado"><EditarChamado /></ProtectedRoute>} />
+        <Route path="/equipes" element={<ProtectedRoute title="Equipes"><Equipes /></ProtectedRoute>} />
+        <Route path="/equipes/nova" element={<ProtectedRoute title="Nova Equipe"><NovaEquipe /></ProtectedRoute>} />
+        <Route path="/equipes/:id/editar" element={<ProtectedRoute title="Editar Equipe"><EditarEquipe /></ProtectedRoute>} />
+        <Route path="/clientes/novo" element={<ProtectedRoute title="Novo Cliente"><NovoCliente /></ProtectedRoute>} />
+        <Route path="/clientes/:id/editar" element={<ProtectedRoute title="Editar Cliente"><EditarCliente /></ProtectedRoute>} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
