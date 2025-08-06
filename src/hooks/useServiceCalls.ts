@@ -11,10 +11,10 @@ export type ServiceCall = Database['public']['Tables']['service_calls']['Row'] &
 };
 
 // Define o tipo para criação de um novo chamado, baseado no tipo de inserção do Supabase
-export type NewServiceCall = Database['public']['Tables']['service_calls']['Insert'];
+export type NewServiceCall = Omit<ServiceCall, 'id' | 'created_at' | 'organization_id'>;
 
 // Define o tipo para atualização de um chamado
-export type UpdateServiceCall = Database['public']['Tables']['service_calls']['Update'];
+export type UpdateServiceCall = Partial<ServiceCall>;
 
 export function useServiceCall(id: string | undefined) {
   const { organizationId } = useAuth();
@@ -74,15 +74,19 @@ export const useServiceCalls = () => {
     enabled: !!organizationId,
   });
 
-  const { mutateAsync: createServiceCall } = useMutation({
-    mutationFn: async (newCall: NewServiceCall) => {
-      if (!organizationId) throw new Error('ID da organização não disponível.');
+  const { mutateAsync: createServiceCall } = useMutation(
+    async (newCall: NewServiceCall) => {
+      if (!organizationId) throw new Error("ID da organização não encontrado.");
       
+      console.log('Dados recebidos no hook useServiceCalls:', newCall);
+
       const callWithDefaults = {
         ...newCall,
         organization_id: organizationId,
-        status: newCall.status || 'pending',
+        status: 'pending', 
       };
+
+      console.log('Objeto final enviado ao Supabase:', callWithDefaults);
 
       const { data, error } = await supabase
         .from('service_calls')
@@ -90,16 +94,21 @@ export const useServiceCalls = () => {
         .select()
         .single();
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error("Erro detalhado do Supabase:", error);
+        throw new Error(error.message);
+      }
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
-    },
-    onError: (error: Error) => {
-      toast({ variant: 'destructive', title: 'Erro ao criar chamado', description: error.message });
-    },
-  });
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
+      },
+      onError: (error: Error) => {
+        toast({ variant: 'destructive', title: 'Erro ao criar chamado', description: error.message });
+      },
+    }
+  );
 
   const { mutateAsync: updateServiceCall } = useMutation<ServiceCall, Error, { id: string; updates: UpdateServiceCall }>({
     mutationFn: async ({ id, updates }) => {

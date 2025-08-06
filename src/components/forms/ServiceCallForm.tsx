@@ -69,6 +69,7 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
           ...values,
           status: 'pending',
         };
+        console.log('Dados enviados para createServiceCall:', submissionData);
         await createServiceCall(submissionData);
         toast({ description: 'Chamado criado com sucesso!' });
       }
