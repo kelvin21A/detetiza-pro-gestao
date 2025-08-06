@@ -3,7 +3,7 @@ import {
   Home,
   Users,
   Clock,
-  ClipboardList,
+  Calendar,
   Users2,
   Settings,
   LogOut,
@@ -25,7 +25,7 @@ const menuItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Renovações", url: "/renovacoes", icon: Clock },
-  { title: "Chamados", url: "/chamados", icon: ClipboardList },
+  { title: "Agenda", url: "/agenda", icon: Calendar },
   { title: "Equipes", url: "/equipes", icon: Users2 },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
