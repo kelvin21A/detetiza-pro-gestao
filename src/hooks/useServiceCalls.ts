@@ -74,8 +74,8 @@ export const useServiceCalls = () => {
     enabled: !!organizationId,
   });
 
-  const { mutateAsync: createServiceCall } = useMutation(
-    async (newCall: NewServiceCall) => {
+  const { mutateAsync: createServiceCall } = useMutation<ServiceCall, Error, NewServiceCall>({
+    mutationFn: async (newCall) => {
       if (!organizationId) throw new Error("ID da organização não encontrado.");
       
       const callWithDefaults = {
@@ -90,21 +90,17 @@ export const useServiceCalls = () => {
         .select()
         .single();
 
-      if (error) {
-        console.error("Erro detalhado do Supabase:", error);
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
-      },
-      onError: (error: Error) => {
-        toast({ variant: 'destructive', title: 'Erro ao criar chamado', description: error.message });
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
+      toast({ description: 'Chamado criado com sucesso!' });
+    },
+    onError: (error) => {
+      toast({ variant: 'destructive', title: 'Erro ao criar chamado', description: error.message });
+    },
+  });
 
   const { mutateAsync: updateServiceCall } = useMutation<ServiceCall, Error, { id: string; updates: UpdateServiceCall }>({
     mutationFn: async ({ id, updates }) => {
@@ -112,36 +108,32 @@ export const useServiceCalls = () => {
         .from('service_calls')
         .update(updates)
         .eq('id', id)
-        .eq('organization_id', organizationId)
-        .select('*, clients(name), teams(name)')
+        .select()
         .single();
 
       if (error) throw new Error(error.message);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
+      queryClient.invalidateQueries({ queryKey: ['service_call', variables.id] });
+      toast({ description: 'Chamado atualizado com sucesso!' });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({ variant: 'destructive', title: 'Erro ao atualizar chamado', description: error.message });
     },
   });
 
-  const { mutateAsync: deleteServiceCall } = useMutation({
-    mutationFn: async (id: string) => {
-      const { data, error } = await supabase
-        .from('service_calls')
-        .delete()
-        .eq('id', id)
-        .eq('organization_id', organizationId);
-
+  const { mutateAsync: deleteServiceCall } = useMutation<void, Error, string>({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('service_calls').delete().eq('id', id);
       if (error) throw new Error(error.message);
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
+      toast({ description: 'Chamado excluído com sucesso.' });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({ variant: 'destructive', title: 'Erro ao excluir chamado', description: error.message });
     },
   });

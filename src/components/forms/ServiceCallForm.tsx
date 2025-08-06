@@ -63,18 +63,23 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
     try {
       if (isEditMode) {
         await updateServiceCall({ id: initialData.id, updates: values as ServiceCall });
-        toast({ description: 'Chamado atualizado com sucesso!' });
       } else {
         const submissionData: NewServiceCall = {
           ...values,
           status: 'pending',
         };
         await createServiceCall(submissionData);
-        toast({ description: 'Chamado criado com sucesso!' });
       }
       navigate('/chamados');
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Erro ao salvar chamado', description: error.message });
+      // O toast de erro já é tratado no hook, mas mantemos um fallback aqui.
+      if (!error.message.includes('Erro ao')) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao salvar chamado',
+          description: error.message || 'Ocorreu um erro inesperado.',
+        });
+      }
     }
   };
 
