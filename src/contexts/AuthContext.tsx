@@ -49,22 +49,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const checkInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      await fetchUserProfile(currentUser);
-      setLoading(false);
-    };
-
-    checkInitialSession();
-
+    // O onAuthStateChange lida com a sessão inicial automaticamente.
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (_event !== 'INITIAL_SESSION') { // Avoid re-fetching on initial load
-        await fetchUserProfile(currentUser);
-      }
+      await fetchUserProfile(currentUser);
+      setLoading(false); // Finaliza o carregamento após a verificação inicial
     });
 
     return () => {
