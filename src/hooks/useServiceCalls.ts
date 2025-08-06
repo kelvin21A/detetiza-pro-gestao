@@ -76,11 +76,11 @@ export const useServiceCalls = () => {
     mutationFn: async (newCall) => {
       if (!organizationId) throw new Error("ID da organização não encontrado.");
       
-      // Garante que o organization_id está sendo injetado nos dados de inserção
+      // Garante que o organization_id e o status padrão sejam sempre aplicados.
       const callToInsert: NewServiceCall = {
         ...newCall,
         organization_id: organizationId,
-        status: 'pending', 
+        status: 'pending', // Garante que o status nunca seja nulo na criação.
       };
 
       const { data, error } = await supabase
