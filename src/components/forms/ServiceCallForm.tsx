@@ -1,28 +1,27 @@
+import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useNavigate } from 'react-router-dom';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useClients } from '@/hooks/useClients';
 import { useTeams } from '@/hooks/useTeams';
-import { useServiceCalls, ServiceCall, NewServiceCall } from '@/hooks/useServiceCalls';
+import { useServiceCalls } from '@/hooks/useServiceCalls';
+import { ServiceCall } from '@/types';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { useNavigate } from 'react-router-dom';
 
+// Esquema de validação limpo: reflete apenas os campos do formulário.
 const formSchema = z.object({
-  title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres.' }),
-  client_id: z.string().uuid({ message: 'Selecione um cliente.' }),
-  team_id: z.preprocess(
-    (val) => (val === '' || val === 'none' ? null : val),
-    z.string().uuid({ message: 'O ID da equipe deve ser um UUID válido.' }).nullable().optional()
-  ),
-  description: z.string().min(3, { message: 'A descrição deve ter pelo menos 3 caracteres.' }),
-  status: z.enum(['pending', 'in_progress', 'completed']).optional(), 
-  scheduled_date: z.string().refine((date) => !isNaN(Date.parse(date)), { message: 'Data inválida.' }),
+  title: z.string().min(1, 'O título é obrigatório.'),
+  description: z.string().optional(),
+  client_id: z.string().min(1, 'O cliente é obrigatório.'),
+  team_id: z.string().optional(),
+  scheduled_date: z.string().min(1, 'A data é obrigatória.'),
+  // O status só é validado no modo de edição, mas o campo pode existir no formulário.
+  status: z.enum(['pending', 'in_progress', 'completed']).optional(),
 });
 
 type ServiceCallFormValues = z.infer<typeof formSchema>;
@@ -31,9 +30,8 @@ interface ServiceCallFormProps {
   initialData?: ServiceCall;
 }
 
-export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
+export const ServiceCallForm = ({ initialData }: ServiceCallFormProps) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { clients, isLoading: isLoadingClients } = useClients();
   const { teams, isLoading: isLoadingTeams } = useTeams();
   const { createServiceCall, updateServiceCall } = useServiceCalls();
@@ -50,10 +48,10 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
         }
       : { 
           title: '',
+          description: '',
           client_id: '',
-          description: '', 
           team_id: '',
-          scheduled_date: new Date().toISOString().substring(0, 16),
+          scheduled_date: '',
         },
   });
 
@@ -62,16 +60,13 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
   const onSubmit = async (values: ServiceCallFormValues) => {
     try {
       if (isEditMode) {
-        await updateServiceCall({ 
-          id: initialData.id, 
-          updates: values 
-        });
+        await updateServiceCall({ id: initialData.id, updates: values });
       } else {
         await createServiceCall(values);
       }
       navigate('/chamados');
-    } catch (error: any) {
-      console.error("Falha ao salvar o chamado no formulário:", error);
+    } catch (error) {
+      console.error("Erro na submissão do formulário:", error);
     }
   };
 
@@ -83,9 +78,23 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Título do Chamado</FormLabel>
+              <FormLabel>Título</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Controle de pragas em condomínio" {...field} />
+                <Input placeholder="Ex: Desinsetização em Restaurante" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descrição</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Detalhes do serviço" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -101,7 +110,7 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um cliente..." />
+                    <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -114,16 +123,25 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
-          name="description"
+          name="team_id"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Descrição do Serviço</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Descreva o serviço a ser realizado..." {...field} />
-              </FormControl>
+              <FormLabel>Equipe</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma equipe (opcional)" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {teams?.map(team => (
+                    <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -134,34 +152,10 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
           name="scheduled_date"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Data e Hora Agendada</FormLabel>
+              <FormLabel>Data e Hora</FormLabel>
               <FormControl>
                 <Input type="datetime-local" {...field} />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="team_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Equipe Responsável</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma equipe..." />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="none">Nenhuma</SelectItem>
-                  {teams?.map(team => (
-                    <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -199,4 +193,4 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
       </form>
     </Form>
   );
-}
+};

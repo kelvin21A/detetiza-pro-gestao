@@ -1,58 +1,31 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabaseClient';
-import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/services/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Database } from '@/types/database.types';
+import { useToast } from '@/components/ui/use-toast';
+import { ServiceCall } from '@/types';
+import { Database } from '@/types/supabase';
 
-// Define o tipo ServiceCall baseado no schema do DB, incluindo o nome do cliente
-export type ServiceCall = Database['public']['Tables']['service_calls']['Row'] & {
-  clients: { name: string } | null;
-  teams: { name: string } | null;
-};
+// Tipos explícitos para criação e atualização, baseados nos tipos gerados pelo Supabase.
+type NewServiceCall = Database['public']['Tables']['service_calls']['Insert'];
+type UpdateServiceCall = Database['public']['Tables']['service_calls']['Update'];
 
-// Tipos baseados diretamente na tabela do Supabase para consistência
-export type NewServiceCall = Database['public']['Tables']['service_calls']['Insert'];
-export type UpdateServiceCall = Database['public']['Tables']['service_calls']['Update'];
-
-export function useServiceCall(id: string | undefined) {
-  const { organizationId } = useAuth();
-
-  const { data: serviceCall, isLoading, isError } = useQuery<ServiceCall | null>({
-    queryKey: ['service_call', id, organizationId],
-    queryFn: async () => {
-      if (!id || !organizationId) return null;
-
-      const { data, error } = await supabase
-        .from('service_calls')
-        .select('*, clients ( name ), teams ( name )')
-        .eq('id', id)
-        .eq('organization_id', organizationId)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          console.warn(`Chamado com id ${id} não encontrado.`);
-          return null;
-        }
-        throw new Error(error.message);
-      }
-      return data as ServiceCall;
-    },
-    enabled: !!id && !!organizationId,
-  });
-
-  return { serviceCall, isLoading, isError };
-}
+// Tipo para os dados que vêm DIRETAMENTE do formulário de criação.
+// Note que não inclui 'status', 'id', 'created_at', ou 'organization_id'.
+type ServiceCallFormCreationData = Omit<NewServiceCall, 'id' | 'created_at' | 'organization_id' | 'status'>;
 
 export const useServiceCalls = () => {
+  const { profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { organizationId } = useAuth();
 
-  const { data: serviceCalls, isLoading, isError } = useQuery({
-    queryKey: ['service_calls', organizationId],
+  const organizationId = profile?.organization_id;
+
+  // BUSCAR TODOS OS CHAMADOS (com filtro de organização)
+  const { data: serviceCalls, isLoading, error } = useQuery<ServiceCall[], Error>({
+    queryKey: ['serviceCalls', organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
+
       try {
         const { data, error } = await supabase
           .from('service_calls')
@@ -72,88 +45,92 @@ export const useServiceCalls = () => {
     enabled: !!organizationId,
   });
 
-  const { mutateAsync: createServiceCall } = useMutation<
-    ServiceCall,
-    Error,
-    Omit<NewServiceCall, 'id' | 'created_at' | 'organization_id' | 'status'>
-  >({
-    mutationFn: async (newCall) => {
-      if (!organizationId) throw new Error("ID da organização não encontrado.");
+  // CRIAR CHAMADO (Reconstruído para segurança máxima)
+  const { mutateAsync: createServiceCall } = useMutation(
+    async (callData: ServiceCallFormCreationData) => {
+      if (!organizationId) throw new Error('Organização não encontrada.');
 
-      // Solução Definitiva: Constrói o objeto de inserção explicitamente.
-      // Isso impede que `status: undefined` do formulário sobrescreva o valor padrão.
-      const callToInsert: NewServiceCall = {
-        organization_id: organizationId,
-        status: 'pending', // Regra de negócio: Status é sempre 'pending' na criação.
-        title: newCall.title,
-        description: newCall.description,
-        client_id: newCall.client_id,
-        scheduled_date: newCall.scheduled_date,
-        team_id: newCall.team_id || null, // Garante que seja nulo se vazio ou undefined.
+      // 1. Construção explícita e segura do objeto a ser salvo.
+      const newCall: NewServiceCall = {
+        ...callData,
+        team_id: callData.team_id || null, // Garante que team_id seja nulo se vazio.
+        organization_id: organizationId,  // 2. Garante o ID da organização.
+        status: 'pending',                // 3. Garante o status inicial como 'pending'.
       };
 
-      const { data, error } = await supabase
-        .from('service_calls')
-        .insert(callToInsert)
-        .select()
-        .single();
+      const { error } = await supabase.from('service_calls').insert(newCall);
 
       if (error) {
-        console.error('Erro detalhado do Supabase:', error);
-        throw new Error(`Erro ao criar chamado: ${error.message}`);
+        throw new Error(error.message);
       }
-      return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
-      toast({ description: 'Chamado criado com sucesso!' });
-    },
-    onError: (error) => {
-      toast({ variant: 'destructive', title: 'Erro ao criar chamado', description: error.message });
-    },
-  });
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['serviceCalls', organizationId] });
+        toast({ title: 'Sucesso!', description: 'Chamado criado com sucesso.' });
+      },
+      onError: (error: Error) => {
+        toast({ title: 'Erro ao criar chamado', description: error.message, variant: 'destructive' });
+      },
+    }
+  );
 
-  const { mutateAsync: updateServiceCall } = useMutation<ServiceCall, Error, { id: string; updates: UpdateServiceCall }>({
-    mutationFn: async ({ id, updates }) => {
-      const { data, error } = await supabase
+  // ATUALIZAR CHAMADO
+  const { mutateAsync: updateServiceCall } = useMutation(
+    async ({ id, updates }: { id: string; updates: UpdateServiceCall }) => {
+      if (!organizationId) throw new Error('Organização não encontrada.');
+
+      // Garante que team_id seja nulo se for uma string vazia.
+      if (updates.team_id === '') {
+        updates.team_id = null;
+      }
+
+      const { error } = await supabase
         .from('service_calls')
         .update(updates)
         .eq('id', id)
-        .eq('organization_id', organizationId) // <-- CORREÇÃO DE SEGURANÇA
-        .select()
-        .single();
+        .eq('organization_id', organizationId); // Filtro de segurança
 
-      if (error) throw new Error(error.message);
-      return data;
+      if (error) {
+        throw new Error(error.message);
+      }
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
-      queryClient.invalidateQueries({ queryKey: ['service_call', variables.id] });
-      toast({ description: 'Chamado atualizado com sucesso!' });
-    },
-    onError: (error) => {
-      toast({ variant: 'destructive', title: 'Erro ao atualizar chamado', description: error.message });
-    },
-  });
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['serviceCalls', organizationId] });
+        toast({ title: 'Sucesso!', description: 'Chamado atualizado com sucesso.' });
+      },
+      onError: (error: Error) => {
+        toast({ title: 'Erro ao atualizar chamado', description: error.message, variant: 'destructive' });
+      },
+    }
+  );
 
-  const { mutateAsync: deleteServiceCall } = useMutation<void, Error, string>({
-    mutationFn: async (id) => {
+  // DELETAR CHAMADO
+  const { mutateAsync: deleteServiceCall } = useMutation(
+    async (id: string) => {
+      if (!organizationId) throw new Error('Organização não encontrada.');
+
       const { error } = await supabase
         .from('service_calls')
         .delete()
         .eq('id', id)
-        .eq('organization_id', organizationId); // <-- CORREÇÃO DE SEGURANÇA
+        .eq('organization_id', organizationId); // Filtro de segurança
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        throw new Error(error.message);
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['service_calls', organizationId] });
-      toast({ description: 'Chamado excluído com sucesso.' });
-    },
-    onError: (error) => {
-      toast({ variant: 'destructive', title: 'Erro ao excluir chamado', description: error.message });
-    },
-  });
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['serviceCalls', organizationId] });
+        toast({ title: 'Sucesso!', description: 'Chamado deletado com sucesso.' });
+      },
+      onError: (error: Error) => {
+        toast({ title: 'Erro ao deletar chamado', description: error.message, variant: 'destructive' });
+      },
+    }
+  );
 
-  return { serviceCalls, isLoading, isError, createServiceCall, updateServiceCall, deleteServiceCall };
+  return { serviceCalls, isLoading, error, createServiceCall, updateServiceCall, deleteServiceCall };
 };
