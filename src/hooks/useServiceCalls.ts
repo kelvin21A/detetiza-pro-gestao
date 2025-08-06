@@ -80,11 +80,16 @@ export const useServiceCalls = () => {
     mutationFn: async (newCall) => {
       if (!organizationId) throw new Error("ID da organização não encontrado.");
 
+      // Solução Definitiva: Constrói o objeto de inserção explicitamente.
+      // Isso impede que `status: undefined` do formulário sobrescreva o valor padrão.
       const callToInsert: NewServiceCall = {
-        ...newCall,
-        team_id: newCall.team_id === '' ? null : newCall.team_id,
         organization_id: organizationId,
-        status: 'pending',
+        status: 'pending', // Regra de negócio: Status é sempre 'pending' na criação.
+        title: newCall.title,
+        description: newCall.description,
+        client_id: newCall.client_id,
+        scheduled_date: newCall.scheduled_date,
+        team_id: newCall.team_id || null, // Garante que seja nulo se vazio ou undefined.
       };
 
       const { data, error } = await supabase
