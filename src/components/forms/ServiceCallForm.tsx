@@ -20,7 +20,7 @@ const formSchema = z.object({
     (val) => (val === '' || val === 'none' ? null : val),
     z.string().uuid({ message: 'O ID da equipe deve ser um UUID válido.' }).nullable().optional()
   ),
-  description: z.string().min(5, { message: 'A descrição deve ter pelo menos 5 caracteres.' }),
+  description: z.string().min(3, { message: 'A descrição deve ter pelo menos 3 caracteres.' }),
   status: z.enum(['pending', 'in_progress', 'completed']).optional(), 
   scheduled_date: z.string().refine((date) => !isNaN(Date.parse(date)), { message: 'Data inválida.' }),
 });
@@ -69,7 +69,6 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
           ...values,
           status: 'pending',
         };
-        console.log('Dados enviados para createServiceCall:', submissionData);
         await createServiceCall(submissionData);
         toast({ description: 'Chamado criado com sucesso!' });
       }

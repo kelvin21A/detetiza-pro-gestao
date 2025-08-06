@@ -78,15 +78,11 @@ export const useServiceCalls = () => {
     async (newCall: NewServiceCall) => {
       if (!organizationId) throw new Error("ID da organização não encontrado.");
       
-      console.log('Dados recebidos no hook useServiceCalls:', newCall);
-
       const callWithDefaults = {
         ...newCall,
         organization_id: organizationId,
         status: 'pending', 
       };
-
-      console.log('Objeto final enviado ao Supabase:', callWithDefaults);
 
       const { data, error } = await supabase
         .from('service_calls')
