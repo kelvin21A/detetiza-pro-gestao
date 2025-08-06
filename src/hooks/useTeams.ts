@@ -65,8 +65,8 @@ export function useTeams() {
     enabled: !!organizationId, // A query só é executada se o organizationId estiver disponível
   });
 
-  const { mutateAsync: createTeam } = useMutation({
-    mutationFn: async (teamData: NewTeam) => {
+  const { mutateAsync: createTeam } = useMutation<Team, Error, NewTeam>({
+    mutationFn: async (teamData) => {
       if (!organizationId) throw new Error('Organização não encontrada');
       const { data, error } = await supabase
         .from('teams')
@@ -85,8 +85,8 @@ export function useTeams() {
     },
   });
 
-  const { mutateAsync: updateTeam } = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: UpdateTeam }) => {
+  const { mutateAsync: updateTeam } = useMutation<Team, Error, { id: string; updates: UpdateTeam }>({
+    mutationFn: async ({ id, updates }) => {
       if (!organizationId) throw new Error('Organização não encontrada');
       const { data, error } = await supabase
         .from('teams')
@@ -98,8 +98,9 @@ export function useTeams() {
       if (error) throw new Error(error.message);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['teams', organizationId] });
+      queryClient.invalidateQueries({ queryKey: ['team', variables.id] });
       toast({ description: 'Equipe atualizada com sucesso!' });
     },
     onError: (error) => {
@@ -107,8 +108,8 @@ export function useTeams() {
     },
   });
 
-  const { mutateAsync: deleteTeam } = useMutation({
-    mutationFn: async (id: string) => {
+  const { mutateAsync: deleteTeam } = useMutation<void, Error, string>({
+    mutationFn: async (id) => {
       if (!organizationId) throw new Error('Organização não encontrada');
       const { error } = await supabase
         .from('teams')

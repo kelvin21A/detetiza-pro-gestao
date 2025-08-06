@@ -10,11 +10,9 @@ export type ServiceCall = Database['public']['Tables']['service_calls']['Row'] &
   teams: { name: string } | null;
 };
 
-// Define o tipo para criação de um novo chamado, baseado no tipo de inserção do Supabase
-export type NewServiceCall = Omit<ServiceCall, 'id' | 'created_at' | 'organization_id'>;
-
-// Define o tipo para atualização de um chamado
-export type UpdateServiceCall = Partial<ServiceCall>;
+// Tipos baseados diretamente na tabela do Supabase para consistência
+export type NewServiceCall = Database['public']['Tables']['service_calls']['Insert'];
+export type UpdateServiceCall = Database['public']['Tables']['service_calls']['Update'];
 
 export function useServiceCall(id: string | undefined) {
   const { organizationId } = useAuth();
@@ -78,7 +76,8 @@ export const useServiceCalls = () => {
     mutationFn: async (newCall) => {
       if (!organizationId) throw new Error("ID da organização não encontrado.");
       
-      const callWithDefaults = {
+      // Garante que o organization_id está sendo injetado nos dados de inserção
+      const callToInsert: NewServiceCall = {
         ...newCall,
         organization_id: organizationId,
         status: 'pending', 
@@ -86,7 +85,7 @@ export const useServiceCalls = () => {
 
       const { data, error } = await supabase
         .from('service_calls')
-        .insert(callWithDefaults)
+        .insert(callToInsert)
         .select()
         .single();
 
@@ -108,6 +107,7 @@ export const useServiceCalls = () => {
         .from('service_calls')
         .update(updates)
         .eq('id', id)
+        .eq('organization_id', organizationId) // <-- CORREÇÃO DE SEGURANÇA
         .select()
         .single();
 
@@ -126,7 +126,12 @@ export const useServiceCalls = () => {
 
   const { mutateAsync: deleteServiceCall } = useMutation<void, Error, string>({
     mutationFn: async (id) => {
-      const { error } = await supabase.from('service_calls').delete().eq('id', id);
+      const { error } = await supabase
+        .from('service_calls')
+        .delete()
+        .eq('id', id)
+        .eq('organization_id', organizationId); // <-- CORREÇÃO DE SEGURANÇA
+
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {

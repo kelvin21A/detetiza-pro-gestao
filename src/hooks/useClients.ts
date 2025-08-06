@@ -1,21 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase.js';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabaseClient';
+import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Database } from '../types/database.types';
+import { Database } from '@/types/database.types';
 
-// Define o tipo Client baseado nos tipos gerados pelo Supabase
-type Client = Database['public']['Tables']['clients']['Row'];
-
-// Re-exporta o tipo Client para ser usado em outras partes da aplicação
-export type { Client };
+// Tipos baseados diretamente na tabela do Supabase para consistência
+export type Client = Database['public']['Tables']['clients']['Row'];
+export type NewClient = Database['public']['Tables']['clients']['Insert'];
+export type UpdateClient = Database['public']['Tables']['clients']['Update'];
 
 // Hook para buscar um único cliente pelo ID
 export function useClient(id: string | undefined) {
   const { organizationId } = useAuth();
 
   const { data: client, isLoading, isError } = useQuery<Client | null>({
-    queryKey: ['client', id],
+    queryKey: ['client', id, organizationId],
     queryFn: async () => {
       if (!id || !organizationId) return null;
       
@@ -27,7 +26,6 @@ export function useClient(id: string | undefined) {
         .single();
 
       if (error) {
-        // Não lançar erro se o cliente simplesmente não for encontrado
         if (error.code === 'PGRST116') {
           console.warn(`Cliente com id ${id} não encontrado.`);
           return null;
@@ -36,7 +34,7 @@ export function useClient(id: string | undefined) {
       }
       return data;
     },
-    enabled: !!organizationId && !!id, // A query só é executada se a organização e o ID existirem
+    enabled: !!organizationId && !!id,
   });
 
   return { client, isLoading, isError };
@@ -47,7 +45,6 @@ export function useClients() {
   const queryClient = useQueryClient();
   const { organizationId } = useAuth();
 
-  // Query para buscar todos os clientes da organização
   const { data: clients, isLoading, isError } = useQuery<Client[]>({
     queryKey: ['clients', organizationId],
     queryFn: async () => {
@@ -56,24 +53,23 @@ export function useClients() {
         .from('clients')
         .select('*')
         .eq('organization_id', organizationId)
-        .order('created_at', { ascending: false });
+        .order('name', { ascending: true });
 
       if (error) throw new Error(error.message);
       return data || [];
     },
-    enabled: !!organizationId, // A query só é executada se a organização existir
+    enabled: !!organizationId,
   });
 
-  // Mutation para criar um novo cliente
-  const { mutateAsync: createClient } = useMutation({
-    mutationFn: async (clientData: Omit<Client, 'id' | 'created_at' | 'organization_id'>) => {
+  const { mutateAsync: createClient } = useMutation<Client, Error, NewClient>({
+    mutationFn: async (clientData) => {
       if (!organizationId) {
         throw new Error('Organização não encontrada para este usuário.');
       }
 
       const { data, error } = await supabase
         .from('clients')
-        .insert([{ ...clientData, organization_id: organizationId }])
+        .insert({ ...clientData, organization_id: organizationId })
         .select()
         .single();
       
@@ -81,7 +77,7 @@ export function useClients() {
       return data;
     },
     onSuccess: (newClient) => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['clients', organizationId] });
       toast({
         title: 'Cliente criado com sucesso!',
         description: `Cliente ${newClient.name} foi adicionado.`,
@@ -96,16 +92,15 @@ export function useClients() {
     },
   });
 
-  // Mutation para atualizar um cliente
-  const { mutateAsync: updateClient } = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Client> }) => {
+  const { mutateAsync: updateClient } = useMutation<Client, Error, { id: string; updates: UpdateClient }>({
+    mutationFn: async ({ id, updates }) => {
       if (!organizationId) throw new Error('Organização não encontrada.');
 
       const { data, error } = await supabase
         .from('clients')
         .update(updates)
         .eq('id', id)
-        .eq('organization_id', organizationId) // Garante que só pode atualizar cliente da própria org
+        .eq('organization_id', organizationId)
         .select()
         .single();
 
@@ -113,8 +108,8 @@ export function useClients() {
       return data;
     },
     onSuccess: (updatedClient) => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['client', updatedClient.id] });
+      queryClient.invalidateQueries({ queryKey: ['clients', organizationId] });
+      queryClient.invalidateQueries({ queryKey: ['client', updatedClient.id, organizationId] });
       toast({
         title: 'Cliente atualizado com sucesso!',
         description: `Cliente ${updatedClient.name} foi atualizado.`,
@@ -129,21 +124,20 @@ export function useClients() {
     },
   });
 
-  // Mutation para deletar um cliente
-  const { mutateAsync: deleteClient } = useMutation({
-    mutationFn: async (id: string) => {
+  const { mutateAsync: deleteClient } = useMutation<void, Error, string>({
+    mutationFn: async (id) => {
       if (!organizationId) throw new Error('Organização não encontrada.');
 
       const { error } = await supabase
         .from('clients')
         .delete()
         .eq('id', id)
-        .eq('organization_id', organizationId); // Garante que só pode deletar cliente da própria org
+        .eq('organization_id', organizationId);
 
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['clients', organizationId] });
       toast({
         title: 'Cliente removido com sucesso!',
       });

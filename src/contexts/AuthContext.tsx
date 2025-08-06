@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useMemo } fr
 import { supabase } from '@/lib/supabaseClient';
 import { User, AuthError } from '@supabase/supabase-js';
 import { Tables } from '@/types/database.types';
+import { toast } from '@/hooks/use-toast';
 
 export type Profile = Tables<'profiles'>;
 
@@ -21,57 +22,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
+  const fetchUserProfile = async (currentUser: User | null) => {
+    if (!currentUser) {
+      setProfile(null);
+      return;
+    }
 
-        if (session?.user) {
-          const { data: userProfile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single();
-          
-          if (error) {
-            console.error('Error fetching profile on initial load:', error);
-            setProfile(null);
-          } else {
-            setProfile(userProfile);
-          }
-        } else {
-          setProfile(null);
-        }
-      } catch (error) {
-        console.error('Error in checkSession:', error);
-        setUser(null);
-        setProfile(null);
-      } finally {
-        setLoading(false);
-      }
+    const { data: userProfile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single();
+
+    if (error || !userProfile) {
+      console.error('Error fetching profile or profile not found:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro de Autenticação',
+        description: 'Seu perfil de usuário não foi encontrado. Por favor, faça login novamente.',
+      });
+      await supabase.auth.signOut();
+      setProfile(null);
+    } else {
+      setProfile(userProfile);
+    }
+  };
+
+  useEffect(() => {
+    const checkInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      await fetchUserProfile(currentUser);
+      setLoading(false);
     };
 
-    checkSession();
+    checkInitialSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const { data: userProfile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-        
-        if (error) {
-          console.error('Error fetching profile on state change:', error);
-          setProfile(null);
-        } else {
-          setProfile(userProfile);
-        }
-      } else {
-        setProfile(null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (_event !== 'INITIAL_SESSION') { // Avoid re-fetching on initial load
+        await fetchUserProfile(currentUser);
       }
     });
 

@@ -60,26 +60,29 @@ export function ServiceCallForm({ initialData }: ServiceCallFormProps) {
   const isLoading = form.formState.isSubmitting || isLoadingClients || isLoadingTeams;
 
   const onSubmit = async (values: ServiceCallFormValues) => {
+    // Garante que o team_id seja nulo se nenhuma equipe for selecionada.
+    const submissionValues = {
+      ...values,
+      team_id: values.team_id === '' ? null : values.team_id,
+    };
+
     try {
       if (isEditMode) {
-        await updateServiceCall({ id: initialData.id, updates: values as ServiceCall });
+        // A tipagem para updates é parcial, não a entidade completa.
+        await updateServiceCall({ id: initialData.id, updates: submissionValues });
       } else {
-        const submissionData: NewServiceCall = {
-          ...values,
-          status: 'pending',
-        };
-        await createServiceCall(submissionData);
+        // O tipo NewServiceCall já é inferido corretamente pelo hook.
+        await createServiceCall(submissionValues);
       }
+      toast({ description: isEditMode ? 'Chamado atualizado com sucesso!' : 'Chamado criado com sucesso!' });
       navigate('/chamados');
     } catch (error: any) {
-      // O toast de erro já é tratado no hook, mas mantemos um fallback aqui.
-      if (!error.message.includes('Erro ao')) {
-        toast({
-          variant: 'destructive',
-          title: 'Erro ao salvar chamado',
-          description: error.message || 'Ocorreu um erro inesperado.',
-        });
-      }
+      // O erro já é tratado no hook, então este toast é um fallback.
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar chamado',
+        description: error.message || 'Ocorreu um erro inesperado.',
+      });
     }
   };
 
