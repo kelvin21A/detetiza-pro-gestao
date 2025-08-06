@@ -72,15 +72,19 @@ export const useServiceCalls = () => {
     enabled: !!organizationId,
   });
 
-  const { mutateAsync: createServiceCall } = useMutation<ServiceCall, Error, NewServiceCall>({
+  const { mutateAsync: createServiceCall } = useMutation<
+    ServiceCall,
+    Error,
+    Omit<NewServiceCall, 'id' | 'created_at' | 'organization_id' | 'status'>
+  >({
     mutationFn: async (newCall) => {
       if (!organizationId) throw new Error("ID da organização não encontrado.");
-      
-      // Garante que o organization_id e o status padrão sejam sempre aplicados.
+
       const callToInsert: NewServiceCall = {
         ...newCall,
+        team_id: newCall.team_id === '' ? null : newCall.team_id,
         organization_id: organizationId,
-        status: 'pending', // Garante que o status nunca seja nulo na criação.
+        status: 'pending',
       };
 
       const { data, error } = await supabase
@@ -89,7 +93,10 @@ export const useServiceCalls = () => {
         .select()
         .single();
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('Erro detalhado do Supabase:', error);
+        throw new Error(`Erro ao criar chamado: ${error.message}`);
+      }
       return data;
     },
     onSuccess: () => {
