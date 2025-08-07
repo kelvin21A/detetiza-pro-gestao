@@ -27,7 +27,17 @@ import NotFound from "./pages/NotFound";
 import { useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutos
+      retry: 1, // Tenta novamente 1 vez em caso de erro
+    },
+    mutations: {
+      retry: 0, // Não tenta novamente mutações em caso de erro
+    },
+  },
+});
 
 const AppContent = () => {
   const { loading } = useAuth();
