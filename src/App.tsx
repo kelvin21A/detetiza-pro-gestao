@@ -49,7 +49,7 @@ const AppContent = () => {
         <Route path="/clientes" element={<ProtectedRoute title="Clientes"><Clientes /></ProtectedRoute>} />
 
         <Route path="/renovacoes" element={<ProtectedRoute title="Renovações"><RenovacoesSimples /></ProtectedRoute>} />
-        <Route path="/agenda" element={<div><Agenda /></div>} />
+        <Route path="/agenda" element={<ProtectedRoute title="Agenda"><Agenda /></ProtectedRoute>} />
         <Route path="/agenda/novo" element={<ProtectedRoute title="Novo Agendamento"><NovoAgendamento /></ProtectedRoute>} />
         <Route path="/agenda/editar/:id" element={<ProtectedRoute title="Editar Agendamento"><EditarAgendamento /></ProtectedRoute>} />
         <Route path="/equipes" element={<ProtectedRoute title="Equipes"><Equipes /></ProtectedRoute>} />
@@ -68,17 +68,7 @@ const AppContent = () => {
   );
 };
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 1,
-    },
-    mutations: {
-      retry: 0,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const App = () => {
 
