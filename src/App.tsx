@@ -68,20 +68,21 @@ const AppContent = () => {
   );
 };
 
-const App = () => {
-    const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 0,
-        retry: 1,
-      },
-      mutations: {
-        retry: 0,
-      },
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
     },
-  }));
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
-  return (
+const App = () => {
+
+    return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SafariMobileFix>
