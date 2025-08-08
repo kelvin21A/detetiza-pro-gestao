@@ -21,7 +21,7 @@ if (FALLBACK_CONFIG.DEBUG_MODE && FALLBACK_CONFIG.ENABLE_CONSOLE_LOGS) {
 }
 
 // Inicializa o gerenciamento de atualizações do Service Worker
-initializeUpdateManager();
+// initializeUpdateManager();
 
 // Get root element with error handling
 const rootElement = document.getElementById('root')
