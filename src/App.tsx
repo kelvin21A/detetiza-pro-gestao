@@ -72,7 +72,7 @@ const App = () => {
     const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutos
+        staleTime: 0,
         retry: 1,
       },
       mutations: {
