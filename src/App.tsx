@@ -82,7 +82,6 @@ const App = () => {
   }));
 
   return (
-  <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SafariMobileFix>
@@ -94,7 +93,6 @@ const App = () => {
         </SafariMobileFix>
       </AuthProvider>
     </QueryClientProvider>
-  </ErrorBoundary>
   );
 };
 

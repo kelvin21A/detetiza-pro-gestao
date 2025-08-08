@@ -31,7 +31,7 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const { open } = useSidebar();
+  const { open, isMobile, setOpenMobile } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   const { signOut } = useAuth();
@@ -72,6 +72,11 @@ export function AppSidebar() {
                       to={item.url}
                       end
                       className={({ isActive }) => getNavClasses({ isActive })}
+                      onClick={() => {
+                        if (isMobile) {
+                          setOpenMobile(false);
+                        }
+                      }}
                     >
                       <item.icon className="w-4 h-4" />
                       {!collapsed && <span>{item.title}</span>}
