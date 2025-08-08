@@ -145,6 +145,11 @@ export const clientService = {
 
   // Get client by ID
   async getById(id) {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: null, error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.CLIENTS)
       .select(`
@@ -162,9 +167,10 @@ export const clientService = {
         )
       `)
       .eq('id', id)
-      .single()
-    
-    return { data, error }
+      .eq('tenant_id', tenantId) // <-- CORREÇÃO DE SEGURANÇA
+      .single();
+
+    return { data, error };
   },
 
   // Create new client
@@ -241,6 +247,11 @@ export const clientService = {
 export const contractService = {
   // Get all contracts
   async getAll() {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: [], error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.CONTRACTS)
       .select(`
@@ -253,39 +264,56 @@ export const contractService = {
         ),
         services (*)
       `)
-      .order('created_at', { ascending: false })
-    
-    return { data, error }
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false });
+
+    return { data, error };
   },
 
   // Create new contract
   async create(contractData) {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: null, error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.CONTRACTS)
-      .insert([contractData])
+      .insert([{ ...contractData, tenant_id: tenantId }])
       .select()
-      .single()
-    
-    return { data, error }
+      .single();
+
+    return { data, error };
   },
 
   // Update contract
   async update(id, contractData) {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: null, error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.CONTRACTS)
       .update(contractData)
       .eq('id', id)
+      .eq('tenant_id', tenantId)
       .select()
-      .single()
-    
-    return { data, error }
+      .single();
+
+    return { data, error };
   },
 
   // Get contracts expiring soon
   async getExpiringContracts(days = 30) {
-    const futureDate = new Date()
-    futureDate.setDate(futureDate.getDate() + days)
-    
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: [], error: { message: 'Tenant não encontrado' } };
+    }
+
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + days);
+
     const { data, error } = await supabase
       .from(TABLES.CONTRACTS)
       .select(`
@@ -297,11 +325,12 @@ export const contractService = {
           phone
         )
       `)
+      .eq('tenant_id', tenantId)
       .lte('end_date', futureDate.toISOString())
       .eq('status', 'active')
-      .order('end_date', { ascending: true })
-    
-    return { data, error }
+      .order('end_date', { ascending: true });
+
+    return { data, error };
   }
 }
 
@@ -309,6 +338,11 @@ export const contractService = {
 export const serviceCallService = {
   // Get all service calls
   async getAll() {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: [], error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.SERVICE_CALLS)
       .select(`
@@ -327,36 +361,53 @@ export const serviceCallService = {
           name
         )
       `)
-      .order('scheduled_date', { ascending: false })
-    
-    return { data, error }
+      .eq('tenant_id', tenantId)
+      .order('scheduled_date', { ascending: false });
+
+    return { data, error };
   },
 
   // Create new service call
   async create(serviceCallData) {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: null, error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.SERVICE_CALLS)
-      .insert([serviceCallData])
+      .insert([{ ...serviceCallData, tenant_id: tenantId }])
       .select()
-      .single()
-    
-    return { data, error }
+      .single();
+
+    return { data, error };
   },
 
   // Update service call
   async update(id, serviceCallData) {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: null, error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.SERVICE_CALLS)
       .update(serviceCallData)
       .eq('id', id)
+      .eq('tenant_id', tenantId)
       .select()
-      .single()
-    
-    return { data, error }
+      .single();
+
+    return { data, error };
   },
 
   // Get service calls by status
   async getByStatus(status) {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: [], error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.SERVICE_CALLS)
       .select(`
@@ -371,10 +422,11 @@ export const serviceCallService = {
           name
         )
       `)
+      .eq('tenant_id', tenantId)
       .eq('status', status)
-      .order('scheduled_date', { ascending: true })
-    
-    return { data, error }
+      .order('scheduled_date', { ascending: true });
+
+    return { data, error };
   }
 }
 
@@ -382,6 +434,11 @@ export const serviceCallService = {
 export const teamService = {
   // Get all teams
   async getAll() {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: [], error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.TEAMS)
       .select(`
@@ -394,13 +451,19 @@ export const teamService = {
           email
         )
       `)
-      .order('name', { ascending: true })
-    
-    return { data, error }
+      .eq('tenant_id', tenantId)
+      .order('name', { ascending: true });
+
+    return { data, error };
   },
 
   // Get all team members
   async getAllMembers() {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: [], error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.TEAM_MEMBERS)
       .select(`
@@ -410,20 +473,26 @@ export const teamService = {
           name
         )
       `)
-      .order('name', { ascending: true })
-    
-    return { data, error }
+      .eq('tenant_id', tenantId)
+      .order('name', { ascending: true });
+
+    return { data, error };
   },
 
   // Create new team member
   async createMember(memberData) {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: null, error: { message: 'Tenant não encontrado' } };
+    }
+
     const { data, error } = await supabase
       .from(TABLES.TEAM_MEMBERS)
-      .insert([memberData])
+      .insert([{ ...memberData, tenant_id: tenantId }])
       .select()
-      .single()
-    
-    return { data, error }
+      .single();
+
+    return { data, error };
   }
 }
 
@@ -431,36 +500,45 @@ export const teamService = {
 export const dashboardService = {
   // Get dashboard statistics
   async getStats() {
+    const tenantId = await getCurrentTenantId();
+    if (!tenantId) {
+      return { data: null, error: { message: 'Tenant não encontrado' } };
+    }
+
     try {
       // Get total clients
       const { count: totalClients } = await supabase
         .from(TABLES.CLIENTS)
         .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId);
 
       // Get active contracts
       const { count: activeContracts } = await supabase
         .from(TABLES.CONTRACTS)
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'active')
+        .eq('tenant_id', tenantId)
+        .eq('status', 'active');
 
       // Get pending service calls
       const { count: pendingCalls } = await supabase
         .from(TABLES.SERVICE_CALLS)
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending')
+        .eq('tenant_id', tenantId)
+        .eq('status', 'pending');
 
       // Get renewals this month
-      const startOfMonth = new Date()
-      startOfMonth.setDate(1)
-      const endOfMonth = new Date()
-      endOfMonth.setMonth(endOfMonth.getMonth() + 1)
-      endOfMonth.setDate(0)
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      const endOfMonth = new Date();
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+      endOfMonth.setDate(0);
 
       const { count: monthlyRenewals } = await supabase
         .from(TABLES.CONTRACTS)
         .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
         .gte('end_date', startOfMonth.toISOString())
-        .lte('end_date', endOfMonth.toISOString())
+        .lte('end_date', endOfMonth.toISOString());
 
       return {
         data: {
@@ -470,9 +548,9 @@ export const dashboardService = {
           monthlyRenewals: monthlyRenewals || 0
         },
         error: null
-      }
+      };
     } catch (error) {
-      return { data: null, error }
+      return { data: null, error };
     }
   }
 }
