@@ -8,12 +8,20 @@ import { Database } from '@/types/supabase';
 export type Appointment = Database['public']['Tables']['appointments']['Row'] & {
   clients: { name: string } | null;
   teams: { name: string } | null;
+  estimated_duration?: number;
+  address?: string;
+  notes?: string;
 };
 type NewAppointment = Database['public']['Tables']['appointments']['Insert'];
 type UpdateAppointment = Database['public']['Tables']['appointments']['Update'];
 
 // Tipo para os dados que vêm do formulário de criação
-type AppointmentFormData = Omit<NewAppointment, 'id' | 'created_at' | 'organization_id' | 'status'>;
+type AppointmentFormData = Omit<NewAppointment, 'id' | 'created_at' | 'organization_id'> & {
+  scheduled_time?: string; // Campo temporário usado apenas no formulário
+  estimated_duration?: number;
+  address?: string;
+  notes?: string;
+};
 
 export const useAppointments = () => {
   const { profile } = useAuth();
@@ -47,11 +55,18 @@ export const useAppointments = () => {
     async (formData: AppointmentFormData) => {
       if (!organizationId) throw new Error('Organização não encontrada.');
 
+      // Remover o campo scheduled_time que não existe no banco de dados
+      const { scheduled_time, ...restFormData } = formData;
+      
       const newAppointment: NewAppointment = {
-        ...formData,
+        ...restFormData,
         organization_id: organizationId,
-        status: 'scheduled', // Novo status padrão
+        status: formData.status || 'scheduled',
         team_id: formData.team_id || null,
+        // Garantir que os novos campos sejam incluídos
+        estimated_duration: formData.estimated_duration,
+        address: formData.address,
+        notes: formData.notes,
       };
 
       const { error } = await supabase.from('appointments').insert(newAppointment);
@@ -76,13 +91,17 @@ export const useAppointments = () => {
     async ({ id, updates }: { id: string; updates: UpdateAppointment }) => {
       if (!organizationId) throw new Error('Organização não encontrada.');
 
-      if (updates.team_id === '') {
-        updates.team_id = null;
+      // Remover o campo scheduled_time que não existe no banco de dados
+      const { scheduled_time, ...restUpdates } = updates as any;
+      
+      // Tratar campos vazios
+      if (restUpdates.team_id === '') {
+        restUpdates.team_id = null;
       }
 
       const { error } = await supabase
         .from('appointments')
-        .update(updates)
+        .update(restUpdates)
         .eq('id', id)
         .eq('organization_id', organizationId);
 

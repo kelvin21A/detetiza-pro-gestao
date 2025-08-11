@@ -14,7 +14,7 @@ import Auth from "./pages/Auth";
 import SuperAdmin from "./pages/SuperAdmin";
 import Clientes from "./pages/Clientes";
 import RenovacoesSimples from "./pages/RenovacoesSimples";
-import { Agenda } from "./pages/Agenda";
+import Agenda from "./pages/Agenda";
 import NovoAgendamento from "./pages/NovoAgendamento";
 import EditarAgendamento from "./pages/EditarAgendamento";
 import Equipes from "./pages/Equipes";
@@ -51,7 +51,7 @@ const AppContent = () => {
         <Route path="/renovacoes" element={<ProtectedRoute title="Renovações"><RenovacoesSimples /></ProtectedRoute>} />
         <Route path="/agenda" element={<ProtectedRoute title="Agenda"><Agenda /></ProtectedRoute>} />
         <Route path="/agenda/novo" element={<ProtectedRoute title="Novo Agendamento"><NovoAgendamento /></ProtectedRoute>} />
-        <Route path="/agenda/editar/:id" element={<ProtectedRoute title="Editar Agendamento"><EditarAgendamento /></ProtectedRoute>} />
+        <Route path="/agenda/:id/editar" element={<ProtectedRoute title="Editar Agendamento"><EditarAgendamento /></ProtectedRoute>} />
         <Route path="/equipes" element={<ProtectedRoute title="Equipes"><Equipes /></ProtectedRoute>} />
         <Route path="/equipes/nova" element={<ProtectedRoute title="Nova Equipe"><NovaEquipe /></ProtectedRoute>} />
         <Route path="/equipes/:id/editar" element={<ProtectedRoute title="Editar Equipe"><EditarEquipe /></ProtectedRoute>} />
