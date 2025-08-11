@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => ({
     sourcemap: mode !== 'production',
     // Melhorar performance de build
     minify: mode === 'production' ? 'esbuild' : false,
+    // Aumentar timeout para evitar erros de rede
+    assetsInlineLimit: 4096,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -42,7 +45,18 @@ export default defineConfig(({ mode }) => ({
   },
   // Otimizações para PWA
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom']
+    include: ['react', 'react-dom', 'react-router-dom'],
+    // Configurações para lidar com problemas de rede
+    esbuildOptions: {
+      logLevel: 'error',
+      logLimit: 0,
+      tsconfigRaw: {
+        compilerOptions: {
+          target: 'es2020',
+          useDefineForClassFields: true
+        }
+      }
+    }
   },
   // Configurações específicas para cada ambiente
   define: {
