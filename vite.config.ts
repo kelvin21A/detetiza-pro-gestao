@@ -8,15 +8,45 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    strictPort: true,
+    open: true,
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: mode !== 'production',
+    // Melhorar performance de build
+    minify: mode === 'production' ? 'esbuild' : false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-popover'],
+        }
+      }
+    }
   },
   plugins: [
-    react(),
-    mode === 'development' &&
-    componentTagger(),
+    react({
+      // Melhorar performance de desenvolvimento
+      devTarget: 'es2022',
+      // Melhorar performance de produção
+      tsDecorators: true,
+      plugins: [['@swc/plugin-styled-components', {}]]
+    }),
+    mode === 'development' && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Otimizações para PWA
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom']
+  },
+  // Configurações específicas para cada ambiente
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    __DEV_MODE__: mode !== 'production',
+  }
 }));

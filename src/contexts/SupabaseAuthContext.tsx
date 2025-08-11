@@ -110,14 +110,20 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           
           // Check if user must change password
           if (profile?.must_change_password) {
-            toast.warning('Você deve alterar sua senha no primeiro acesso', {
+            toast({
+              title: 'Aviso',
+              description: 'Você deve alterar sua senha no primeiro acesso',
               duration: 5000
             });
           }
           
           // Check if user is active
           if (profile && !profile.active) {
-            toast.error('Sua conta está inativa. Contate o administrador.');
+            toast({
+              title: 'Erro',
+              description: 'Sua conta está inativa. Contate o administrador.',
+              variant: 'destructive'
+            });
             signOut();
             return;
           }
@@ -142,7 +148,11 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         setTenant(tenant);
         
         if (event === 'SIGNED_IN' && profile?.must_change_password) {
-          toast.warning('Você deve alterar sua senha no primeiro acesso');
+          toast({
+            title: 'Aviso',
+            description: 'Você deve alterar sua senha no primeiro acesso',
+            duration: 5000
+          });
         }
       } else {
         setProfile(null);
@@ -175,9 +185,16 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
           errorMessage = 'Muitas tentativas. Tente novamente em alguns minutos.';
         }
         
-        toast.error(errorMessage);
+        toast({
+          title: 'Erro',
+          description: errorMessage,
+          variant: 'destructive'
+        });
       } else {
-        toast.success('Login realizado com sucesso!');
+        toast({
+          title: 'Sucesso',
+          description: 'Login realizado com sucesso!'
+        });
       }
       
       return { error };
@@ -302,7 +319,11 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
       });
 
       if (error) {
-        toast.error(`Erro ao alterar senha: ${error.message}`);
+        toast({
+          title: 'Erro',
+          description: `Erro ao alterar senha: ${error.message}`,
+          variant: 'destructive'
+        });
         return { error };
       }
 
@@ -311,10 +332,17 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
         await updateProfile({ must_change_password: false });
       }
 
-      toast.success('Senha alterada com sucesso!');
+      toast({
+        title: 'Sucesso',
+        description: 'Senha alterada com sucesso!'
+      });
       return { error: null };
     } catch (error) {
-      toast.error('Erro inesperado ao alterar senha');
+      toast({
+        title: 'Erro',
+        description: 'Erro inesperado ao alterar senha',
+        variant: 'destructive'
+      });
       return { error: error as AuthError };
     }
   };

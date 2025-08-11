@@ -1,6 +1,8 @@
-const CACHE_NAME = 'detetiza-pro-gestao-v1';
+const APP_VERSION = '1.0.0'; // Deve ser atualizado a cada nova versão
+const CACHE_NAME = `detetiza-pro-gestao-v${APP_VERSION}`;
 const CACHE_EXPIRY_DAYS = 7; // Cache data for 7 days
-const API_CACHE_NAME = 'api-cache-v1';
+const API_CACHE_NAME = `api-cache-v${APP_VERSION}`;
+const OFFLINE_PAGE = '/offline.html';
 
 const API_ENDPOINTS_TO_CACHE = [
   '/api/service-calls',
@@ -13,9 +15,16 @@ const STATIC_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/favicon.ico',
-  '/logo192.png',
-  '/logo512.png',
-  // Add other static assets as needed
+  '/offline.html',
+  '/icons/icon-72x72.png',
+  '/icons/icon-96x96.png',
+  '/icons/icon-128x128.png',
+  '/icons/icon-144x144.png',
+  '/icons/icon-152x152.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-384x384.png',
+  '/icons/icon-512x512.png',
+  // CSS e JS principais serão adicionados automaticamente pelo processo de build
 ];
 
 // Install event - cache static assets
@@ -49,6 +58,108 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve from cache, falling back to network
 self.addEventListener('fetch', (event) => {
+  // Skip cross-origin requests
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Handle API requests with network-first strategy
+  if (API_ENDPOINTS_TO_CACHE.some(endpoint => event.request.url.includes(endpoint))) {
+    event.respondWith(networkFirstWithCache(event.request));
+    return;
+  }
+
+  // For all other requests, use cache-first strategy
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        // Return cached response if found
+        if (response) {
+          return response;
+        }
+
+        // Otherwise fetch from network
+        return fetch(event.request)
+          .then((networkResponse) => {
+            // Cache valid responses for future use
+            if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+              const responseToCache = networkResponse.clone();
+              caches.open(CACHE_NAME)
+                .then((cache) => {
+                  // Add timestamp header for cache expiry
+                  const headers = new Headers(responseToCache.headers);
+                  headers.append('sw-cache-timestamp', Date.now().toString());
+                  
+                  // Create new response with timestamp
+                  const timestampedResponse = new Response(responseToCache.body, {
+                    status: responseToCache.status,
+                    statusText: responseToCache.statusText,
+                    headers: headers
+                  });
+                  
+                  cache.put(event.request, timestampedResponse);
+                });
+            }
+            return networkResponse;
+          })
+          .catch((error) => {
+            console.error('Fetch failed:', error);
+            // For navigation requests, show offline page
+            if (event.request.mode === 'navigate') {
+              return caches.match(OFFLINE_PAGE);
+            }
+            // For image requests, return a placeholder
+            if (event.request.destination === 'image') {
+              return caches.match('/placeholder.svg');
+            }
+            // For other resources, just fail
+            return new Response('Network error', { status: 408, headers: { 'Content-Type': 'text/plain' } });
+          });
+      })
+  );
+});
+
+// Network-first strategy with cache fallback for API requests
+async function networkFirstWithCache(request) {
+  try {
+    // Try network first
+    const networkResponse = await fetch(request);
+    if (networkResponse && networkResponse.status === 200) {
+      // Clone response to cache it
+      const responseToCache = networkResponse.clone();
+      const cache = await caches.open(API_CACHE_NAME);
+      
+      // Add timestamp header for cache expiry
+      const headers = new Headers(responseToCache.headers);
+      headers.append('sw-cache-timestamp', Date.now().toString());
+      
+      // Create new response with timestamp
+      const timestampedResponse = new Response(responseToCache.body, {
+        status: responseToCache.status,
+        statusText: responseToCache.statusText,
+        headers: headers
+      });
+      
+      cache.put(request, timestampedResponse);
+      return networkResponse;
+    }
+    throw new Error('Network response not valid');
+  } catch (error) {
+    console.log('Network request failed, falling back to cache', error);
+    // If network fails, try cache
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    // If nothing in cache, return offline JSON for API
+    return new Response(JSON.stringify({ error: 'Você está offline. Os dados não estão disponíveis.' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+// O código abaixo foi substituído pela implementação acima
+/* self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
   

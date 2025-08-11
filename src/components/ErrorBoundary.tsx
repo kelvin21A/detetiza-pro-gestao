@@ -45,6 +45,22 @@ class ErrorBoundary extends Component<Props, State> {
     try {
       // Exemplo: Sentry.captureException(error, { extra: errorInfo });
       console.log('Error reported to monitoring service');
+      
+      // Enviar para um endpoint de log (implementação futura)
+      // const errorData = {
+      //   message: error.message,
+      //   stack: error.stack,
+      //   componentStack: errorInfo.componentStack,
+      //   timestamp: new Date().toISOString(),
+      //   userAgent: navigator.userAgent,
+      //   url: window.location.href,
+      //   version: FALLBACK_CONFIG.APP_VERSION
+      // };
+      // fetch('/api/log-error', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(errorData)
+      // }).catch(e => console.error('Failed to send error to API:', e));
     } catch (reportingError) {
       console.error('Failed to report error:', reportingError);
     }
