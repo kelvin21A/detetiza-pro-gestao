@@ -6,7 +6,7 @@
     skip_processing = false
 
 [[plugins]]
-  package = "./netlify/plugins/retry-plugin.js"
+  package = "./netlify/plugins"
 
 [build.environment]
   NODE_VERSION = "18"
