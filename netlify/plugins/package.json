@@ -1,0 +1,14 @@
+{
+  "name": "netlify-plugin-retry-plugin",
+  "version": "1.0.0",
+  "description": "Custom Netlify plugin to handle network retries during build",
+  "main": "index.js",
+  "keywords": [
+    "netlify",
+    "netlify-plugin",
+    "build",
+    "retry"
+  ],
+  "author": "Detetiza Pro",
+  "license": "MIT"
+}

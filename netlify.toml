@@ -7,6 +7,7 @@
 
 [[plugins]]
   package = "./netlify/plugins"
+  # No inputs needed for this plugin
 
 [build.environment]
   NODE_VERSION = "18"

@@ -3,3 +3,5 @@ description: Custom plugin to handle network retries during build
 version: 1.0.0
 
 inputs: []
+
+modulePath: index.js

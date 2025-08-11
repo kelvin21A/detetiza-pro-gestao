@@ -22,8 +22,9 @@ The following changes have been made to address the network-related build issues
 ### 2. Netlify Configuration
 
 - Added environment variables in netlify.toml to optimize network requests
-- Created a custom retry plugin with proper manifest.yml to handle network errors gracefully
+- Created a custom retry plugin with proper manifest.yml, package.json, and documentation to handle network errors gracefully
 - Added build processing configuration to improve build stability
+- Configured the plugin correctly in netlify.toml according to Netlify's requirements
 
 ### 3. NPM Configuration
 
