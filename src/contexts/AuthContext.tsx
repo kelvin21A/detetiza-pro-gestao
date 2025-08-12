@@ -1,60 +1,48 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { User, AuthError } from '@supabase/supabase-js';
+import { Session, User } from '@supabase/supabase-js';
 import { Tables } from '@/types/database.types';
-import { toast } from '@/hooks/use-toast';
 
-export type Profile = Tables<'profiles'>;
+// Usa o tipo 'profiles' gerado pelo Supabase para garantir consistência
+export type UserProfile = Tables<'profiles'>;
 
-interface AuthContextType {
+// Define o tipo para o valor do contexto
+export interface AuthContextType {
   user: User | null;
-  profile: Profile | null;
+  userProfile: UserProfile | null;
+  session: Session | null;
   loading: boolean;
+  isSuperAdmin: boolean;
   organizationId: string | null;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signOut: () => Promise<{ error: AuthError | null }>;
 }
 
+// Cria o contexto com um valor padrão
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+// Define as props para o AuthProvider
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserProfile = async (currentUser: User | null) => {
-    if (!currentUser) {
-      setProfile(null);
-      return;
-    }
-
-    const { data: userProfile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .single();
-
-    if (error || !userProfile) {
-      console.error('Error fetching profile or profile not found:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro de Autenticação',
-        description: 'Seu perfil de usuário não foi encontrado. Por favor, faça login novamente.',
-      });
-      await supabase.auth.signOut();
-      setProfile(null);
-    } else {
-      setProfile(userProfile);
-    }
-  };
-
   useEffect(() => {
-    // O onAuthStateChange lida com a sessão inicial automaticamente.
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      await fetchUserProfile(currentUser);
-      setLoading(false); // Finaliza o carregamento após a verificação inicial
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+      // Não definimos loading como false aqui para esperar o perfil do usuário
+    };
+
+    getSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
     });
 
     return () => {
@@ -62,28 +50,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
-  };
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        setLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
 
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
-  };
+          if (error) {
+            console.error('Error fetching user profile:', error);
+            setUserProfile(null);
+          } else {
+            setUserProfile(data as UserProfile);
+          }
+        } catch (e) {
+          console.error('Exception fetching user profile:', e);
+          setUserProfile(null);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        // Se não houver usuário, não há perfil e o carregamento termina
+        setUserProfile(null);
+        setLoading(false);
+      }
+    };
 
-  const value = useMemo(() => ({
+    fetchUserProfile();
+  }, [user]);
+
+  const isSuperAdmin = useMemo(() => userProfile?.role === 'super_admin', [userProfile]);
+  const organizationId = useMemo(() => userProfile?.organization_id ?? null, [userProfile]);
+
+  const value = {
     user,
-    profile,
+    userProfile,
+    session,
     loading,
-    organizationId: profile?.organization_id || null,
-    signIn,
-    signOut,
-  }), [user, profile, loading]);
+    isSuperAdmin,
+    organizationId
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // Renderiza os filhos apenas quando o carregamento inicial (sessão + perfil) estiver concluído
+  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 };
 
+// Hook customizado para usar o contexto de autenticação
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

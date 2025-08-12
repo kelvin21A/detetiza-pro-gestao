@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 
 
@@ -15,9 +15,9 @@ export const useDashboardStats = () => {
       }
       const organizationId = user.user_metadata.organization_id;
 
-      const safeQuery = async (query: Promise<{ count: number | null; error: any }>) => {
+      async function safeQuery(queryBuilder: any) {
         try {
-          const { count, error } = await query;
+          const { count, error } = await queryBuilder;
           if (error) {
             console.error('Dashboard stat query failed:', error);
             return 0;
@@ -32,7 +32,7 @@ export const useDashboardStats = () => {
       const [clientsCount, contractsResult, servicesCount, callsCount, teamsCount] = await Promise.all([
         safeQuery(supabase.from('clients').select('id', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'em-dia')),
         supabase.from('contracts').select('end_date, value', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'active'),
-        safeQuery(supabase.from('service_orders').select('id', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'concluido')),
+        safeQuery(supabase.from('service_calls').select('id', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'concluido')),
         safeQuery(supabase.from('service_calls').select('id', { count: 'exact' }).eq('organization_id', organizationId).eq('status', 'agendado')),
         safeQuery(supabase.from('teams').select('id', { count: 'exact' }).eq('organization_id', organizationId)),
       ]);
