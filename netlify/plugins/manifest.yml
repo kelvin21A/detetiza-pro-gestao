@@ -1,6 +1,3 @@
 name: retry-plugin
 
 inputs: []
-
-# A propriedade modulePath não é reconhecida pelo Netlify
-# O arquivo index.js será automaticamente detectado como ponto de entrada
