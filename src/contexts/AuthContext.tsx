@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   // Renderiza os filhos apenas quando o carregamento inicial (sessão + perfil) estiver concluído
-  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 // Hook customizado para usar o contexto de autenticação

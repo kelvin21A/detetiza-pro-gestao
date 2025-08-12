@@ -1,14 +1,15 @@
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
+import Spinner from './components/ui/spinner';
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import SuperAdminRoute from "./components/SuperAdminRoute";
 import SafariMobileFix from "./components/SafariMobileFix";
 import { PWAInstallBanner, PWAUpdateBanner } from "./components/PWAInstallBanner";
-import ErrorBoundary from "./components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -24,19 +25,19 @@ import NovoCliente from "./pages/NovoCliente";
 import EditarCliente from "./pages/EditarCliente";
 import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
-import { useAuth } from "./contexts/AuthContext";
-import { Loader2 } from "lucide-react";
-import { useState } from 'react';
+
+const queryClient = new QueryClient();
+
+// Em produção, o DevTools não será incluído no bundle final.
+const DevTools = process.env.NODE_ENV === 'development' 
+  ? React.lazy(() => import('./components/DevTools')) 
+  : () => null;
 
 const AppContent = () => {
   const { loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
+    return <Spinner />;
   }
 
   return (
@@ -47,7 +48,6 @@ const AppContent = () => {
         <Route path="/super-admin" element={<SuperAdminRoute><SuperAdmin /></SuperAdminRoute>} />
         <Route path="/" element={<ProtectedRoute title="Dashboard"><Index /></ProtectedRoute>} />
         <Route path="/clientes" element={<ProtectedRoute title="Clientes"><Clientes /></ProtectedRoute>} />
-
         <Route path="/renovacoes" element={<ProtectedRoute title="Renovações"><RenovacoesSimples /></ProtectedRoute>} />
         <Route path="/agenda" element={<ProtectedRoute title="Agenda"><Agenda /></ProtectedRoute>} />
         <Route path="/agenda/novo" element={<ProtectedRoute title="Novo Agendamento"><NovoAgendamento /></ProtectedRoute>} />
@@ -58,33 +58,31 @@ const AppContent = () => {
         <Route path="/clientes/novo" element={<ProtectedRoute title="Novo Cliente"><NovoCliente /></ProtectedRoute>} />
         <Route path="/clientes/:id/editar" element={<ProtectedRoute title="Editar Cliente"><EditarCliente /></ProtectedRoute>} />
         <Route path="/configuracoes" element={<ProtectedRoute title="Configurações"><Configuracoes /></ProtectedRoute>} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {/* PWA Components */}
       <PWAInstallBanner />
       <PWAUpdateBanner />
     </BrowserRouter>
   );
 };
 
-const queryClient = new QueryClient();
-
-const App = () => {
-
-    return (
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SafariMobileFix>
-          <TooltipProvider>
+      <TooltipProvider>
+        <AuthProvider>
+          <SafariMobileFix>
             <Toaster />
             <Sonner />
             <AppContent />
-          </TooltipProvider>
-        </SafariMobileFix>
-      </AuthProvider>
+          </SafariMobileFix>
+        </AuthProvider>
+      </TooltipProvider>
+      <React.Suspense fallback={null}>
+        <DevTools />
+      </React.Suspense>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;
