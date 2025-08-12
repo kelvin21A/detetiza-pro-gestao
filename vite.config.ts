@@ -22,6 +22,8 @@ export default defineConfig(({ mode }) => ({
     // Adicionar configurações para melhorar a confiabilidade do build
     emptyOutDir: true,
     reportCompressedSize: false, // Reduzir overhead de build
+    // Adicionar configuração para evitar erros de memória
+    target: 'es2015',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -37,7 +39,7 @@ export default defineConfig(({ mode }) => ({
       devTarget: 'es2022',
       // Melhorar performance de produção
       tsDecorators: true,
-      plugins: [['@swc/plugin-styled-components', {}]]
+      // Configuração simplificada sem plugins adicionais
     }),
     mode === 'development' && componentTagger(),
   ].filter(Boolean),
@@ -49,6 +51,7 @@ export default defineConfig(({ mode }) => ({
   // Otimizações para PWA
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom'],
+    exclude: [], // Não excluir nenhuma dependência da otimização
     // Configurações para lidar com problemas de rede
     esbuildOptions: {
       logLevel: 'error',
