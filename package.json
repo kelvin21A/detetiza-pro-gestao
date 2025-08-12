@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm cache clean --force && npm ci --prefer-offline --no-audit && vite build --emptyOutDir",
+    "build": "npm cache clean --force && npm ci --prefer-offline --no-audit --no-fund --loglevel=error && vite build --emptyOutDir",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

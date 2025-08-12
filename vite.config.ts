@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => ({
     // Aumentar timeout para evitar erros de rede
     assetsInlineLimit: 4096,
     chunkSizeWarningLimit: 1000,
+    // Adicionar configurações para melhorar a confiabilidade do build
+    emptyOutDir: true,
+    reportCompressedSize: false, // Reduzir overhead de build
     rollupOptions: {
       output: {
         manualChunks: {
