@@ -1,0 +1,36 @@
+# Arquivos e diretórios a serem ignorados pelo npm
+
+# Arquivos de desenvolvimento
+.git
+.github
+.vscode
+.idea
+.DS_Store
+
+# Arquivos de build
+dist
+dist-ssr
+
+# Arquivos de teste
+test
+tests
+__tests__
+
+# Arquivos de configuração
+.eslintrc*
+.prettierrc*
+.stylelintrc*
+.editorconfig
+
+# Arquivos de documentação
+docs
+README.md
+CHANGELOG.md
+LICENSE
+
+# Outros arquivos
+*.log
+*.lock
+*.tgz
+.env*
+!.env.example

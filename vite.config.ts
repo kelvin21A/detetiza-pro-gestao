@@ -13,22 +13,35 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: 'dist',
-    sourcemap: mode !== 'production',
+    sourcemap: false, // Desativar sourcemaps em produção para reduzir tamanho
     // Melhorar performance de build
     minify: mode === 'production' ? 'esbuild' : false,
     // Aumentar timeout para evitar erros de rede
     assetsInlineLimit: 4096,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1500, // Aumentar limite de aviso
     // Adicionar configurações para melhorar a confiabilidade do build
     emptyOutDir: true,
     reportCompressedSize: false, // Reduzir overhead de build
     // Adicionar configuração para evitar erros de memória
     target: 'es2015',
+    cssCodeSplit: true, // Separar CSS para melhor caching
+    modulePreload: false, // Desativar preload para reduzir overhead
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-popover'],
+        manualChunks: (id) => {
+          // Estratégia de chunking mais eficiente
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('scheduler') || id.includes('prop-types')) {
+              return 'vendor-react';
+            }
+            if (id.includes('@radix-ui')) {
+              return 'vendor-radix';
+            }
+            if (id.includes('lucide') || id.includes('framer-motion') || id.includes('date-fns')) {
+              return 'vendor-ui';
+            }
+            return 'vendor'; // todos os outros node_modules
+          }
         }
       }
     }
@@ -50,12 +63,19 @@ export default defineConfig(({ mode }) => ({
   },
   // Otimizações para PWA
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
+    include: ['react', 'react-dom', 'react-router-dom', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-popover'],
     exclude: [], // Não excluir nenhuma dependência da otimização
     // Configurações para lidar com problemas de rede
     esbuildOptions: {
       logLevel: 'error',
       logLimit: 0,
+      logOverride: {
+        'this-is-undefined-in-esm': 'silent'
+      },
+      target: 'es2020', // Garantir compatibilidade com navegadores modernos
+      supported: {
+        'top-level-await': true // Suporte para top-level await
+      },
       tsconfigRaw: {
         compilerOptions: {
           target: 'es2020',

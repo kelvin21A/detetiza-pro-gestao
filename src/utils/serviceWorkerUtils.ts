@@ -64,9 +64,56 @@ export async function checkForUpdates(): Promise<boolean> {
  * Inicializa o gerenciamento de atualizações do Service Worker
  */
 export function initializeUpdateManager() {
+  // Verificar suporte a Service Worker
   if (!('serviceWorker' in navigator)) {
+    console.warn('Service Worker não suportado neste navegador');
     return;
   }
+
+  // Registra o service worker com tratamento de erros robusto
+  const registerServiceWorker = async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+        updateViaCache: 'none' // Sempre verificar atualizações no servidor
+      });
+      
+      console.log('Service Worker registrado com sucesso:', registration.scope);
+      
+      // Configurar detecção de atualizações
+      setupUpdateDetection(registration);
+      
+      return registration;
+    } catch (error) {
+      console.error('Erro ao registrar Service Worker:', error);
+      // Não propagar o erro para não quebrar a aplicação
+      return null;
+    }
+  };
+  
+  // Configurar detecção de atualizações
+  const setupUpdateDetection = (registration: ServiceWorkerRegistration) => {
+    // Verificar atualizações
+    registration.addEventListener('updatefound', () => {
+      const newWorker = registration.installing;
+      if (!newWorker) return;
+
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          console.log('Nova versão disponível!');
+          // Notifica os callbacks registrados
+          updateCallbacks.forEach(callback => callback(registration));
+        }
+      });
+    });
+    
+    // Verificar periodicamente por atualizações (a cada 60 minutos)
+    setInterval(() => {
+      registration.update().catch(err => {
+        console.warn('Erro ao verificar atualizações do Service Worker:', err);
+      });
+    }, 60 * 60 * 1000);
+  };
 
   // Monitora mudanças no Service Worker
   navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -74,8 +121,15 @@ export function initializeUpdateManager() {
     window.location.reload();
   });
 
-  // Verifica se há uma nova versão disponível a cada 5 minutos
-  setInterval(checkForUpdates, 5 * 60 * 1000);
+  // Registrar quando a página carregar
+  if (document.readyState === 'complete') {
+    registerServiceWorker();
+  } else {
+    window.addEventListener('load', () => {
+      // Pequeno atraso para priorizar o carregamento da página
+      setTimeout(registerServiceWorker, 1000);
+    });
+  }
 }
 
 // Inicializa o gerenciador de atualizações automaticamente

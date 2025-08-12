@@ -1,8 +1,11 @@
 // Nomes de cache com timestamp para forçar atualizações
-const CACHE_VERSION = 'v1.0.2';
+const CACHE_VERSION = 'v1.0.3';
 const CACHE_NAME = `detetizapro-${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `detetizapro-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `detetizapro-dynamic-${CACHE_VERSION}`;
+
+// Configuração para evitar erros durante o build
+const DEBUG = false; // Desativar logs em produção para evitar overhead
 
 // Apenas arquivos estáticos essenciais para o funcionamento offline
 const STATIC_ASSETS = [

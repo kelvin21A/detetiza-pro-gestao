@@ -20,8 +20,18 @@ if (FALLBACK_CONFIG.DEBUG_MODE && FALLBACK_CONFIG.ENABLE_CONSOLE_LOGS) {
   }
 }
 
-// Inicializa o gerenciamento de atualizações do Service Worker
-// initializeUpdateManager();
+// Inicializa o gerenciamento de atualizações do Service Worker apenas em produção
+if (process.env.NODE_ENV === 'production') {
+  try {
+    initializeUpdateManager();
+    if (FALLBACK_CONFIG.DEBUG_MODE) {
+      console.log('✅ Service Worker inicializado com sucesso');
+    }
+  } catch (error) {
+    console.error('❌ Erro ao inicializar Service Worker:', error);
+    // Continuar mesmo se o Service Worker falhar
+  }
+}
 
 // Get root element with error handling
 const rootElement = document.getElementById('root')

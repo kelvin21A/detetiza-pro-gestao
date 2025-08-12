@@ -1,7 +1,8 @@
 [build]
   publish = "dist"
   command = "npm run build"
-  # Increase build timeout to handle network issues
+  functions = "netlify/functions"
+  ignore_warnings = true
   [build.processing]
     skip_processing = false
 
@@ -11,10 +12,12 @@
 
 [build.environment]
   NODE_VERSION = "18"
-  # Environment variables to help with network issues
-  NPM_FLAGS = "--prefer-offline --no-audit --no-fund --loglevel=error --fetch-retries=5"
+  NPM_FLAGS = "--prefer-offline --no-audit --no-fund --no-optional --loglevel=error --fetch-retries=5"
   NETLIFY_USE_YARN = "false"
   NETLIFY_RESTORE_CACHE = "true"
+  NODE_OPTIONS = "--max-old-space-size=4096 --max-http-header-size=16384"
+  FETCH_RETRY_MAXTIMEOUT = "180000"
+  NETWORK_TIMEOUT = "150000"
 
 [[redirects]]
   from = "/*"
