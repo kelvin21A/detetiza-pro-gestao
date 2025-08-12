@@ -1,8 +1,48 @@
-# Welcome to your Lovable project
+# O Meu Gestor - Sistema de Gestão
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/9b10ab83-4f4e-4bfd-8d50-de078371ce01
+
+## Estrutura do Banco de Dados
+
+O projeto utiliza o Supabase como banco de dados PostgreSQL. A estrutura principal inclui:
+
+- **organizations**: Organizações/empresas no sistema
+- **profiles**: Perfis de usuários
+- **clients**: Clientes das organizações
+- **teams**: Equipes de trabalho
+- **service_calls**: Chamados de serviço/agendamentos
+
+### Mapeamento de Tabelas e Views
+
+Para manter a compatibilidade entre o código TypeScript e o esquema do banco de dados, foi implementada uma solução que utiliza views e triggers:
+
+- A tabela física no banco de dados é `service_calls`
+- Uma view chamada `appointments` foi criada para mapear para `service_calls`
+- Triggers INSTEAD OF foram implementados para sincronizar operações CRUD entre a view e a tabela
+
+Esta abordagem permite que o código TypeScript continue utilizando `appointments` enquanto o banco de dados mantém a estrutura original com `service_calls`.
+
+### Aplicando as Migrações
+
+Para aplicar as migrações e implementar a solução:
+
+```sh
+# Navegue até o diretório do projeto
+cd omeugestor
+
+# Execute o script de migração
+node supabase/apply-migrations.js
+```
+
+Alternativamente, você pode aplicar as migrações manualmente usando o CLI do Supabase:
+
+```sh
+supabase db execute --file supabase/migrations/007_combined_migrations.sql
+```
+
+A migração `007_combined_migrations.sql` contém todas as alterações necessárias para implementar a solução.
 
 ## How can I edit this code?
 
