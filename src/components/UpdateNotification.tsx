@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { onUpdateAvailable } from '../utils/serviceWorkerUtils';
+// import { onUpdateAvailable } from '../utils/serviceWorkerUtils';
 import { Button } from './ui/button';
 import { CheckCircle2, RefreshCw, X } from 'lucide-react';
 
@@ -7,12 +7,10 @@ export function UpdateNotification() {
   const [show, setShow] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  useEffect(() => {
-    // Verifica se há uma atualização disponível
-    onUpdateAvailable(() => {
-      setShow(true);
-    });
-  }, []);
+  // useEffect(() => {
+  //   // Verifica se há uma atualização disponível
+  //   onUpdateAvailable(() => setShow(true));
+  // }, []);
 
   const handleUpdate = async () => {
     try {

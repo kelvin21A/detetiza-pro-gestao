@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import LoadingFallback from './components/LoadingFallback'
 import { FALLBACK_CONFIG } from './config/fallback'
-import { initializeUpdateManager } from './utils/serviceWorkerUtils'
+// import { initializeUpdateManager } from './utils/serviceWorkerUtils'
 import './index.css'
 
 // Log app initialization
@@ -23,7 +23,7 @@ if (FALLBACK_CONFIG.DEBUG_MODE && FALLBACK_CONFIG.ENABLE_CONSOLE_LOGS) {
 // Inicializa o gerenciamento de atualizações do Service Worker apenas em produção
 if (process.env.NODE_ENV === 'production') {
   try {
-    initializeUpdateManager();
+    // initializeUpdateManager();
     if (FALLBACK_CONFIG.DEBUG_MODE) {
       console.log('✅ Service Worker inicializado com sucesso');
     }
