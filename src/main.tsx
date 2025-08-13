@@ -17,16 +17,3 @@ const root = createRoot(rootElement);
 root.render(<App />);
 
 console.log('✅ App rendered successfully');
-        <button onclick="window.location.reload()" style="
-          background: #dc2626;
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 4px;
-          cursor: pointer;
-          margin-top: 16px;
-        ">Recarregar Página</button>
-      </div>
-    </div>
-  `
-}
