@@ -1,39 +1,42 @@
 import React from 'react';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Core Providers & Components
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as Sonner } from 'sonner'; // Corrected import from sonner package
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Spinner from './components/ui/spinner';
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import SuperAdminRoute from "./components/SuperAdminRoute";
-import SafariMobileFix from "./components/SafariMobileFix";
-import { PWAInstallBanner, PWAUpdateBanner } from "./components/PWAInstallBanner";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import SuperAdmin from "./pages/SuperAdmin";
-import Clientes from "./pages/Clientes";
-import RenovacoesSimples from "./pages/RenovacoesSimples";
-import Agenda from "./pages/Agenda";
-import NovoAgendamento from "./pages/NovoAgendamento";
-import EditarAgendamento from "./pages/EditarAgendamento";
-import Equipes from "./pages/Equipes";
-import NovaEquipe from "./pages/NovaEquipe";
-import EditarEquipe from "./pages/EditarEquipe";
-import NovoCliente from "./pages/NovoCliente";
-import EditarCliente from "./pages/EditarCliente";
-import Configuracoes from "./pages/Configuracoes";
-import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from './components/ProtectedRoute';
+import SuperAdminRoute from './components/SuperAdminRoute';
+import SafariMobileFix from './components/SafariMobileFix';
+import { PWAInstallBanner, PWAUpdateBanner } from './components/PWAInstallBanner';
+
+// Page Components
+import Index from './pages/Index';
+import Auth from './pages/Auth';
+import SuperAdmin from './pages/SuperAdmin';
+import Clientes from './pages/Clientes';
+import RenovacoesSimples from './pages/RenovacoesSimples';
+import Agenda from './pages/Agenda';
+import NovoAgendamento from './pages/NovoAgendamento';
+import EditarAgendamento from './pages/EditarAgendamento';
+import Equipes from './pages/Equipes';
+import NovaEquipe from './pages/NovaEquipe';
+import EditarEquipe from './pages/EditarEquipe';
+import NovoCliente from './pages/NovoCliente';
+import EditarCliente from './pages/EditarCliente';
+import Configuracoes from './pages/Configuracoes';
+import NotFound from './pages/NotFound';
 
 const queryClient = new QueryClient();
 
-// Em produção, o DevTools não será incluído no bundle final.
-const DevTools = process.env.NODE_ENV === 'development' 
-  ? React.lazy(() => import('./components/DevTools')) 
-  : () => null;
+// Lazy load DevTools in development only
+const DevTools = React.lazy(() => import('./components/DevTools'));
 
-const AppContent = () => {
+// Component to handle routing after auth is checked
+function AppRouter() {
   const { loading } = useAuth();
 
   if (loading) {
@@ -64,8 +67,9 @@ const AppContent = () => {
       <PWAUpdateBanner />
     </BrowserRouter>
   );
-};
+}
 
+// Main App component to set up all providers
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -74,15 +78,18 @@ function App() {
           <SafariMobileFix>
             <Toaster />
             <Sonner />
-            <AppContent />
+            <AppRouter />
           </SafariMobileFix>
         </AuthProvider>
       </TooltipProvider>
-      <React.Suspense fallback={null}>
-        <DevTools />
-      </React.Suspense>
+      {process.env.NODE_ENV === 'development' && (
+        <React.Suspense fallback={null}>
+          <DevTools />
+        </React.Suspense>
+      )}
     </QueryClientProvider>
   );
 }
 
 export default App;
+
