@@ -6,9 +6,9 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 // Validação das variáveis de ambiente
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Erro de Configuração: As variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não foram definidas no arquivo .env');
-  throw new Error('Credenciais do Supabase não encontradas. Verifique seu arquivo .env');
+if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project') || supabaseAnonKey.includes('your-anon-key')) {
+  console.warn('⚠️ Aviso: Credenciais do Supabase não configuradas. Usando modo de desenvolvimento.');
+  console.warn('📝 Para configurar: Edite o arquivo .env com suas credenciais reais do Supabase.');
 }
 
 // Log para depuração em ambiente de desenvolvimento
@@ -16,16 +16,22 @@ if (import.meta.env.DEV) {
   console.log('🔗 Configuração do Supabase:', {
     url: supabaseUrl ? 'URL definida' : 'URL não definida',
     key: supabaseAnonKey ? 'Chave definida' : 'Chave não definida',
+    configured: supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('your-project') && !supabaseAnonKey.includes('your-anon-key')
   });
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-});
+// Criar cliente Supabase (mesmo com credenciais de desenvolvimento)
+export const supabase = createClient<Database>(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  }
+);
 
 // Database table names
 export const TABLES = {

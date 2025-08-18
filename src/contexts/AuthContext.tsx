@@ -14,6 +14,7 @@ export interface AuthContextType {
   loading: boolean;
   isSuperAdmin: boolean;
   organizationId: string | null;
+  signOut: () => Promise<void>;
 }
 
 // Cria o contexto com um valor padrão
@@ -86,13 +87,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const isSuperAdmin = useMemo(() => userProfile?.role === 'super_admin', [userProfile]);
   const organizationId = useMemo(() => userProfile?.organization_id ?? null, [userProfile]);
 
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      // State will update via onAuthStateChange listener
+    } catch (e) {
+      console.error('Error during sign out:', e);
+    }
+  };
+
   const value = {
     user,
     userProfile,
     session,
     loading,
     isSuperAdmin,
-    organizationId
+    organizationId,
+    signOut
   };
 
   // Renderiza os filhos apenas quando o carregamento inicial (sessão + perfil) estiver concluído

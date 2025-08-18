@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Simple initialization log
 console.log('🚀 Initializing app...');
@@ -14,6 +15,10 @@ if (!rootElement) {
 }
 
 const root = createRoot(rootElement);
-root.render(<App />);
+root.render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+);
 
 console.log('✅ App rendered successfully');

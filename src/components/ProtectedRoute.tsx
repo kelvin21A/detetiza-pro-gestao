@@ -23,5 +23,5 @@ export function ProtectedRoute({ children, title }: ProtectedRouteProps) {
     return <Navigate to="/auth" replace />;
   }
 
-  return <AppLayout>{children}</AppLayout>;
+  return <AppLayout title={title}>{children}</AppLayout>;
 }
