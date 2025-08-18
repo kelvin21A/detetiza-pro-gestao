@@ -15,7 +15,26 @@ export default defineConfig(({ mode }) => ({
     outDir: 'dist',
     sourcemap: false, // Desativar sourcemaps em produção para reduzir tamanho
     // Melhorar performance de build
-    minify: mode === 'production' ? 'esbuild' : false,
+    // Usar terser em produção para evitar problemas de minificação agressiva (ex: "Cannot access 'E' before initialization")
+    minify: mode === 'production' ? 'terser' : false,
+    terserOptions: mode === 'production'
+      ? {
+          keep_classnames: true,
+          keep_fnames: true,
+          mangle: {
+            toplevel: false,
+            safari10: true
+          },
+          compress: {
+            passes: 2,
+            pure_getters: true,
+            ecma: 2020,
+          },
+          format: {
+            comments: false,
+          },
+        }
+      : undefined,
     // Aumentar timeout para evitar erros de rede
     assetsInlineLimit: 4096,
     chunkSizeWarningLimit: 1500, // Aumentar limite de aviso
@@ -23,7 +42,8 @@ export default defineConfig(({ mode }) => ({
     emptyOutDir: true,
     reportCompressedSize: false, // Reduzir overhead de build
     // Adicionar configuração para evitar erros de memória
-    target: 'es2015',
+    // Alvo mais moderno reduz transpilações que podem introduzir padrões frágeis
+    target: 'es2020',
     cssCodeSplit: true, // Separar CSS para melhor caching
     modulePreload: false, // Desativar preload para reduzir overhead
     rollupOptions: {
