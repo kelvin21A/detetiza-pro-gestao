@@ -181,6 +181,23 @@
       // Evita registrar SW em ambiente local para não interferir no desenvolvimento
       const isLocalhost = ['localhost', '127.0.0.1'].includes(location.hostname);
 
+      // Em localhost: desregistra SWs antigos e limpa caches para evitar telas brancas por controle residual
+      if (isLocalhost && 'serviceWorker' in navigator) {
+        try {
+          navigator.serviceWorker.getRegistrations().then((regs) => {
+            regs.forEach((reg) => reg.unregister());
+          });
+          if (window.caches && caches.keys) {
+            caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+          }
+          // Pequeno atraso para garantir limpeza antes do render
+          setTimeout(() => {}, 0);
+          console.log('[SW] Localhost: service workers unregistered and caches cleared');
+        } catch (e) {
+          console.warn('[SW] Localhost cleanup failed:', e);
+        }
+      }
+
       // Inicializa o Service Worker quando a página carregar (apenas fora do localhost)
       if (!isLocalhost) {
         if (document.readyState === 'loading') {
