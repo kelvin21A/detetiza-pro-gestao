@@ -1,5 +1,5 @@
 // Nomes de cache com timestamp para forçar atualizações
-const CACHE_VERSION = 'v1.0.3';
+const CACHE_VERSION = 'v1.0.4';
 const CACHE_NAME = `detetizapro-${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `detetizapro-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `detetizapro-dynamic-${CACHE_VERSION}`;
@@ -177,24 +177,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Para qualquer outro tipo de requisição, tenta buscar da rede primeiro
-  event.respondWith(
-    fetch(request)
-      .then(response => {
-        // Se for uma resposta válida, armazena no cache
-        if (response && response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(DYNAMIC_CACHE_NAME)
-            .then(cache => cache.put(request, responseClone));
-        }
-        return response;
-      })
-      .catch(() => {
-        // Se a rede falhar, tenta buscar do cache
-        return caches.match(request);
-      })
-  );
-
   // Estratégia para arquivos estáticos (Cache First)
   if (STATIC_ASSETS.some(asset => request.url.includes(asset))) {
     event.respondWith(
