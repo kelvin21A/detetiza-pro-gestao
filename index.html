@@ -178,11 +178,16 @@
         });
       }
       
-      // Inicializa o Service Worker quando a página carregar
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', registerServiceWorker);
-      } else {
-        registerServiceWorker();
+      // Evita registrar SW em ambiente local para não interferir no desenvolvimento
+      const isLocalhost = ['localhost', '127.0.0.1'].includes(location.hostname);
+
+      // Inicializa o Service Worker quando a página carregar (apenas fora do localhost)
+      if (!isLocalhost) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', registerServiceWorker);
+        } else {
+          registerServiceWorker();
+        }
       }
       
       // Monitora mudanças no Service Worker para recarregar a página quando uma nova versão estiver ativa
